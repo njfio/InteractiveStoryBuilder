@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageGenerator } from './ImageGenerator';
 import { ManuscriptImageSettings } from './ManuscriptImageSettings';
-import { Play, Share2, Settings2, Loader2, Images } from 'lucide-react';
+import { Play, Share2, Settings2, Loader2, Images, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -205,11 +205,6 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           <Button variant="outline" size="icon" onClick={shareChunk}>
             <Share2 />
           </Button>
-          <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
-            <Button variant="outline" size="icon">
-              <Images className="h-4 w-4" />
-            </Button>
-          </Link>
           {isAuthor && (
             <>
               <Button
@@ -267,6 +262,27 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
               </Dialog>
             </>
           )}
+        </div>
+
+        <div className="mt-8 flex items-center justify-between">
+          <div className="w-24"> {/* Spacer for alignment */}
+          </div>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground">Page 1 of 10</span>
+            <Button variant="outline" size="icon">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="w-24 flex justify-end">
+            <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
+              <Button variant="outline" size="icon">
+                <Images className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </CardContent>
     </Card>
