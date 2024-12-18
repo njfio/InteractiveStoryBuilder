@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 interface ChunkViewProps {
   chunk: {
@@ -163,11 +164,16 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
                 variant="outline"
                 onClick={async () => {
                   try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) {
+                      throw new Error('Please sign in to generate images');
+                    }
+
                     const response = await fetch('/api/generate-image', {
                       method: 'POST',
                       headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${session.access_token}`
                       },
                       credentials: 'include',
                       body: JSON.stringify({ 

@@ -2,6 +2,12 @@ import type { Express, Request } from 'express';
 import { createServer, type Server } from 'http';
 import { db } from '@db';
 import { manuscripts, chunks, images, seoMetadata, users } from '@db/schema';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL!,
+  process.env.VITE_SUPABASE_ANON_KEY!
+);
 import { requireAuth } from './middleware/auth';
 import { eq } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
@@ -68,7 +74,6 @@ export function registerRoutes(app: Express): Server {
         manuscriptId: manuscript.id,
         chunkOrder: chunk.order,
         headingH1: chunk.headingH1,
-        headingH2: chunk.headingH2,
         text: chunk.text,
       }))
     );
@@ -145,15 +150,23 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Image Generation
-  app.post('/api/generate-image', requireAuth, async (req, res) => {
+  app.post('/api/generate-image', async (req, res) => {
     const { chunkId, prompt } = req.body;
-    const user = req.user;
-
-    if (!user) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
+    
     try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ message: 'No authorization header' });
+      }
+
+      const token = authHeader.split(' ')[1];
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      
+      if (error || !user) {
+        console.error('Auth error:', error);
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+
       const chunk = await db.query.chunks.findFirst({
         where: eq(chunks.id, chunkId),
         with: {
