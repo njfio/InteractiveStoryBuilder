@@ -1,0 +1,76 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Loader2, Image as ImageIcon } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface ImageGeneratorProps {
+  chunkId: number;
+}
+
+export function ImageGenerator({ chunkId }: ImageGeneratorProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const { toast } = useToast();
+
+  const generateImage = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chunkId, prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Image generated successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Custom prompt for image generation..."
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            disabled={isGenerating}
+          />
+          <Button
+            onClick={generateImage}
+            disabled={isGenerating}
+            className="whitespace-nowrap"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating
+              </>
+            ) : (
+              <>
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Generate Image
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
