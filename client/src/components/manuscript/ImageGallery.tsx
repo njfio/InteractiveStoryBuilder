@@ -144,6 +144,49 @@ export function ImageGallery({ manuscriptId }: ImageGalleryProps) {
 
   return (
     <div className="space-y-8">
+      {manuscriptId && (
+        <Card className="bg-muted/50">
+          <CardContent className="flex items-center justify-between p-6">
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold">Image Generation Progress</h3>
+              <p className="text-sm text-muted-foreground">
+                {data?.images.length || 0} images generated out of {data?.totalChunks || 0} total chunks
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) throw new Error('Please sign in to generate images');
+
+                  const response = await fetch(`/api/manuscripts/${manuscriptId}/generate-images`, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${session.access_token}`
+                    }
+                  });
+
+                  if (!response.ok) throw new Error('Failed to start batch generation');
+
+                  toast({
+                    title: 'Success',
+                    description: 'Image generation started for remaining chunks',
+                  });
+                } catch (error) {
+                  toast({
+                    title: 'Error',
+                    description: (error as Error).message,
+                    variant: 'destructive',
+                  });
+                }
+              }}
+            >
+              Generate Missing Images
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {data?.images.map((image: any) => (
           <Card key={image.id} className="overflow-hidden">

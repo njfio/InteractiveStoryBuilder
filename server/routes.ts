@@ -301,13 +301,20 @@ export function registerRoutes(app: Express): Server {
       offset,
     });
 
-    const total = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(images)
-      .where(eq(images.manuscriptId, parseInt(req.params.id)));
+    const [total, chunksCount] = await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(images)
+        .where(eq(images.manuscriptId, parseInt(req.params.id))),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(chunks)
+        .where(eq(chunks.manuscriptId, parseInt(req.params.id)))
+    ]);
 
     res.json({
       images: results,
+      totalChunks: chunksCount[0].count,
       pagination: {
         page,
         limit,
@@ -358,18 +365,84 @@ export function registerRoutes(app: Express): Server {
 
   // Bulk Image Generation
   app.post('/api/manuscripts/:id/generate-images', async (req, res) => {
-    const user = req.user as any;
-    if (!user) return res.status(401).send('Unauthorized');
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ message: 'No authorization header' });
+      }
 
-    const manuscript = await db.query.manuscripts.findFirst({
-      where: eq(manuscripts.id, parseInt(req.params.id)),
-    });
+      const token = authHeader.split(' ')[1];
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      
+      if (error || !user) {
+        console.error('Auth error:', error);
+        return res.status(401).json({ message: 'Invalid token' });
+      }
 
-    if (!manuscript) return res.status(404).send('Manuscript not found');
-    if (manuscript.authorId !== user.id) return res.status(403).send('Forbidden');
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.id)),
+      });
 
-    // TODO: Implement bulk image generation
-    res.status(202).json({ message: 'Image generation started' });
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      if (manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      // Get chunks without images
+      const chunksWithoutImages = await db.query.chunks.findMany({
+        where: eq(chunks.manuscriptId, manuscript.id),
+        columns: {
+          id: true,
+          text: true,
+        },
+        with: {
+          images: {
+            columns: {
+              id: true,
+            },
+            limit: 1
+          }
+        }
+      });
+
+      const chunksToGenerate = chunksWithoutImages.filter(chunk => chunk.images.length === 0);
+
+      // Start generating images for chunks without images
+      for (const chunk of chunksToGenerate) {
+        try {
+          console.log(`Generating image for chunk ${chunk.id}`);
+          const imageUrl = await generateImage(
+            chunk.text,
+            manuscript.imageSettings as any,
+            null // No character reference for batch generation
+          );
+
+          await db.insert(images).values({
+            manuscriptId: manuscript.id,
+            chunkId: chunk.id,
+            localPath: imageUrl,
+            promptParams: { prompt: chunk.text },
+          });
+
+          console.log(`Generated image for chunk ${chunk.id}`);
+        } catch (error) {
+          console.error(`Failed to generate image for chunk ${chunk.id}:`, error);
+          // Continue with next chunk even if one fails
+          continue;
+        }
+      }
+
+      res.status(202).json({ 
+        message: 'Image generation started',
+        totalChunks: chunksToGenerate.length
+      });
+    } catch (error) {
+      console.error('Error in batch image generation:', error);
+      res.status(500).json({ message: 'Failed to start image generation' });
+    }
   });
 
   // Text-to-Speech
