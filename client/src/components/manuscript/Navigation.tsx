@@ -43,10 +43,18 @@ export function Navigation({ chunks, currentChunk, onNavigate }: NavigationProps
                   <Button
                     key={chunk.id}
                     variant={chunk.id === currentChunk ? 'default' : 'ghost'}
-                    className="w-full justify-start"
+                    className="w-full justify-start text-left"
                     onClick={() => onNavigate(chunk.id)}
                   >
-                    {chunk.headingH1 || chunk.headingH2 || `Page ${chunk.id}`}
+                    <span className="block truncate">
+                      {chunk.headingH1 
+                        ? chunk.headingH1
+                            .replace(/\*\*/g, '')  // Remove all ** markers
+                            .replace(/^#+\s*/, '') // Remove any # markers
+                            .substring(0, 40)      // Limit length
+                        : `Page ${chunk.id}`}
+                      {chunk.headingH1 && chunk.headingH1.length > 40 ? '...' : ''}
+                    </span>
                   </Button>
                 ))}
               </div>
