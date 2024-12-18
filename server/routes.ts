@@ -127,16 +127,33 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: 'Forbidden' });
       }
 
+      console.log(`Generating image for chunk ${chunkId} with prompt: ${prompt}`);
+      
       // TODO: Implement actual image generation with Replicate API
-      // For now, just create a placeholder image record
+      // For now, generate a colored SVG placeholder
+      const svgContent = `
+        <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#f0f0f0"/>
+          <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#666" text-anchor="middle">
+            Placeholder Image for: ${prompt || 'No prompt provided'}
+          </text>
+        </svg>
+      `;
+
+      // Create a base64 data URL for the SVG
+      const base64Svg = Buffer.from(svgContent).toString('base64');
+      const imageUrl = `data:image/svg+xml;base64,${base64Svg}`;
+
+      console.log('Creating image record in database');
       const [image] = await db.insert(images).values({
         manuscriptId: chunk.manuscriptId,
         chunkId: chunk.id,
-        localPath: '/placeholder.jpg',
+        localPath: imageUrl,
         promptParams: { prompt },
       }).returning();
 
-      res.json(image);
+      console.log('Image generated successfully:', image.id);
+      res.json({ ...image, imageUrl });
     } catch (error) {
       console.error('Error generating image:', error);
       res.status(500).json({ message: 'Failed to generate image' });

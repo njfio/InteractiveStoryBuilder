@@ -87,11 +87,15 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
         </div>
 
         {chunk.imageUrl && (
-          <div className="aspect-w-16 aspect-h-9 relative rounded-lg overflow-hidden">
+          <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-muted">
             <img
               src={chunk.imageUrl}
               alt="Generated illustration"
-              className="object-cover w-full h-full"
+              className="object-contain w-full h-full"
+              onError={(e) => {
+                console.error('Error loading image:', e);
+                e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXJyb3IgbG9hZGluZyBpbWFnZTwvdGV4dD48L3N2Zz4=';
+              }}
             />
           </div>
         )}
