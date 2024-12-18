@@ -4,22 +4,40 @@ if (!process.env.REPLICATE_API_TOKEN) {
   throw new Error('Missing REPLICATE_API_TOKEN environment variable');
 }
 
+import fs from 'fs/promises';
+import path from 'path';
+import { createClient } from '@supabase/supabase-js';
+
+if (!process.env.REPLICATE_API_TOKEN) {
+  throw new Error('Missing REPLICATE_API_TOKEN environment variable');
+}
+
+async function downloadImage(url: string, localPath: string): Promise<void> {
+  console.log('Downloading image from:', url);
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Failed to download image');
+  
+  const buffer = Buffer.from(await response.arrayBuffer());
+  await fs.writeFile(localPath, buffer);
+  console.log('Image saved to:', localPath);
+}
+
 export async function generateImage(prompt: string): Promise<string> {
   console.log('Sending request to Replicate API for image generation...');
   
-  const response = await fetch('https://api.replicate.com/v1/predictions', {
+  const response = await fetch('https://api.replicate.com/v1/models/luma/photon/predictions', {
     method: 'POST',
     headers: {
-      'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
+      'Authorization': `Bearer ${process.env.REPLICATE_API_TOKEN}`,
       'Content-Type': 'application/json',
+      'Prefer': 'wait',
     },
     body: JSON.stringify({
-      version: "2d2d2cfa6f0f3f525e08aafd87b6a32632ee2e9e02def46d5dcd396dbb3fded0",
       input: {
         prompt,
         seed: Math.floor(Math.random() * 1000000),
-        aspect_ratio: "3:4",
-      },
+        aspect_ratio: "9:16"
+      }
     }),
   });
 
@@ -29,32 +47,27 @@ export async function generateImage(prompt: string): Promise<string> {
     throw new Error(`Failed to generate image: ${error}`);
   }
 
-  const prediction = await response.json();
-  console.log('Prediction created:', prediction.id);
+  const result = await response.json();
+  console.log('API response:', result);
 
-  // Poll for the result
-  let result = prediction;
-  while (result.status !== 'succeeded' && result.status !== 'failed') {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
-      headers: {
-        'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
-      },
-    });
-    
-    if (!pollResponse.ok) {
-      throw new Error('Failed to check prediction status');
-    }
-    
-    result = await pollResponse.json();
-    console.log('Prediction status:', result.status);
-  }
-
-  if (result.status === 'failed') {
-    throw new Error('Image generation failed');
+  if (!result.output) {
+    throw new Error('No output from image generation');
   }
 
   const imageUrl = result.output[0];
-  console.log('Image generated successfully:', imageUrl);
-  return imageUrl;
+  console.log('Image URL from API:', imageUrl);
+
+  // Create images directory if it doesn't exist
+  const imagesDir = path.join(process.cwd(), 'public', 'images');
+  await fs.mkdir(imagesDir, { recursive: true });
+
+  // Generate a unique filename
+  const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+  const localPath = path.join(imagesDir, filename);
+
+  // Download and save the image
+  await downloadImage(imageUrl, localPath);
+
+  // Return the local path that can be served by Express
+  return `/images/${filename}`;
 }
