@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageGenerator } from './ImageGenerator';
 import { ManuscriptImageSettings } from './ManuscriptImageSettings';
-import { Play, Share2, Settings2 } from 'lucide-react';
+import { Play, Share2, Settings2, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface ChunkViewProps {
   chunk: {
@@ -42,6 +43,51 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const { toast } = useToast();
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const queryClient = useQueryClient();
+
+  const generateImage = useMutation({
+    mutationFn: async (chunkData: { chunkId: number; prompt: string }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Please sign in to generate images');
+      }
+
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify(chunkData),
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please sign in to generate images');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate image');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Image generated successfully',
+      });
+      // Invalidate and refetch the chunks query to update the UI
+      queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${chunk.manuscriptId}/chunks`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate image',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const playTTS = async () => {
     try {
@@ -162,51 +208,22 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
             <>
               <Button
                 variant="outline"
-                onClick={async () => {
-                  try {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (!session) {
-                      throw new Error('Please sign in to generate images');
-                    }
-
-                    const response = await fetch('/api/generate-image', {
-                      method: 'POST',
-                      headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                      },
-                      credentials: 'include',
-                      body: JSON.stringify({ 
-                        chunkId: chunk.id,
-                        prompt: chunk.text 
-                      }),
-                    });
-                    
-                    if (!response.ok) {
-                      if (response.status === 401) {
-                        throw new Error('Please sign in to generate images');
-                      }
-                      const error = await response.json();
-                      throw new Error(error.message || 'Failed to generate image');
-                    }
-                    
-                    toast({
-                      title: 'Success',
-                      description: 'Image generated successfully',
-                    });
-                    
-                    // Refresh the page to show new image
-                    window.location.reload();
-                  } catch (error) {
-                    toast({
-                      title: 'Error',
-                      description: (error as Error).message || 'Failed to generate image',
-                      variant: 'destructive',
-                    });
-                  }
+                onClick={() => {
+                  generateImage.mutate({ 
+                    chunkId: chunk.id,
+                    prompt: chunk.text 
+                  });
                 }}
+                disabled={generateImage.isPending}
               >
-                Generate Image
+                {generateImage.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  'Generate Image'
+                )}
               </Button>
               <Dialog>
                 <DialogTrigger asChild>
