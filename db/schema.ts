@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, jsonb, uuid, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, jsonb, uuid, boolean, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 
@@ -11,7 +11,7 @@ export const users = pgTable("users", {
 export const manuscripts = pgTable("manuscripts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  authorId: uuid("author_id").notNull().references(() => users.id),
+  authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   originalMarkdown: text("original_markdown").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -19,8 +19,8 @@ export const manuscripts = pgTable("manuscripts", {
 
 export const chunks = pgTable("chunks", {
   id: serial("id").primaryKey(),
-  manuscriptId: serial("manuscript_id").references(() => manuscripts.id),
-  chunkOrder: serial("chunk_order").notNull(),
+  manuscriptId: integer("manuscript_id").notNull().references(() => manuscripts.id, { onDelete: 'cascade' }),
+  chunkOrder: integer("chunk_order").notNull(),
   headingH1: text("heading_h1"),
   headingH2: text("heading_h2"),
   text: text("text").notNull(),
@@ -30,8 +30,8 @@ export const chunks = pgTable("chunks", {
 
 export const images = pgTable("images", {
   id: serial("id").primaryKey(),
-  manuscriptId: serial("manuscript_id").references(() => manuscripts.id),
-  chunkId: serial("chunk_id").references(() => chunks.id),
+  manuscriptId: integer("manuscript_id").notNull().references(() => manuscripts.id, { onDelete: 'cascade' }),
+  chunkId: integer("chunk_id").notNull().references(() => chunks.id, { onDelete: 'cascade' }),
   localPath: text("local_path").notNull(),
   promptParams: jsonb("prompt_params").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -40,8 +40,8 @@ export const images = pgTable("images", {
 
 export const seoMetadata = pgTable("seo_metadata", {
   id: serial("id").primaryKey(),
-  manuscriptId: serial("manuscript_id").references(() => manuscripts.id),
-  chunkId: serial("chunk_id").references(() => chunks.id),
+  manuscriptId: integer("manuscript_id").notNull().references(() => manuscripts.id, { onDelete: 'cascade' }),
+  chunkId: integer("chunk_id").references(() => chunks.id, { onDelete: 'cascade' }),
   title: text("title").notNull(),
   description: text("description").notNull(),
   keywords: text("keywords").array(),

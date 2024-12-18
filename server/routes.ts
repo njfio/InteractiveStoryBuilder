@@ -44,6 +44,16 @@ export function registerRoutes(app: Express): Server {
     const { title, markdown } = req.body;
     const user = req.user;
 
+    if (!user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // Ensure user exists in our database
+    await db.insert(users).values({
+      id: user.id,
+      email: user.email,
+    }).onConflictDoNothing();
+
     const parsedChunks = await parseMarkdown(markdown);
 
     const [manuscript] = await db.insert(manuscripts).values({
