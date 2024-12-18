@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageGenerator } from './ImageGenerator';
 import { ManuscriptImageSettings } from './ManuscriptImageSettings';
-import { Play, Share2, Settings2, Loader2, Images, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Share2, Settings2, Loader2, Images, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -264,8 +264,13 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           )}
         </div>
 
-        <div className="mt-8 flex items-center justify-between">
-          <div className="w-24"> {/* Spacer for alignment */}
+        <div className="mt-8 flex items-center justify-between border-t pt-4">
+          <div className="w-24 flex justify-start">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="icon">
+                <Home className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             <Button variant="outline" size="icon">
