@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'wouter';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageGenerator } from './ImageGenerator';
@@ -87,17 +87,19 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
     loadChunks();
   }, [chunk.manuscriptId, chunk.id]);
 
+  const [, setLocation] = useLocation();
+
   const handlePreviousPage = () => {
     if (currentChunkIndex > 0) {
       const prevChunk = allChunks[currentChunkIndex - 1];
-      window.location.href = `/reader/${chunk.manuscriptId}?chunk=${prevChunk.id}`;
+      setLocation(`/reader/${chunk.manuscriptId}?chunk=${prevChunk.id}`);
     }
   };
 
   const handleNextPage = () => {
     if (currentChunkIndex < allChunks.length - 1) {
       const nextChunk = allChunks[currentChunkIndex + 1];
-      window.location.href = `/reader/${chunk.manuscriptId}?chunk=${nextChunk.id}`;
+      setLocation(`/reader/${chunk.manuscriptId}?chunk=${nextChunk.id}`);
     }
   };
 
