@@ -298,7 +298,7 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                       <DialogHeader>
                         <DialogTitle>Image Generation</DialogTitle>
                         <DialogDescription>
-                          Generate and configure images for this section
+                          Customize and generate images for this section of your manuscript
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-6">

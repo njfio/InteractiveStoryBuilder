@@ -9,7 +9,6 @@ export function Reader() {
   const [, params] = useRoute('/reader/:id');
   const [location, setLocation] = useLocation();
   const { user } = useAuthStore();
-  const [currentChunkId, setCurrentChunkId] = useState<number | null>(null);
 
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<{
     id: number;
@@ -33,25 +32,17 @@ export function Reader() {
     enabled: !!params?.id,
   });
 
-  // Handle URL changes and initial load
+  // Get current chunk ID from URL
+  const searchParams = new URLSearchParams(location.split('?')[1]);
+  const chunkIdParam = searchParams.get('chunk');
+  const currentChunkId = chunkIdParam ? parseInt(chunkIdParam) : null;
+
+  // Set initial chunk if none specified
   useEffect(() => {
-    const searchParams = new URLSearchParams(location.split('?')[1]);
-    const chunkId = searchParams.get('chunk');
-    
-    if (chunkId) {
-      const parsedId = parseInt(chunkId);
-      if (parsedId !== currentChunkId) {
-        setCurrentChunkId(parsedId);
-      }
-    } else if (chunks.length > 0 && !isLoadingChunks) {
-      // If no chunk specified, redirect to the first chunk
+    if (chunks.length > 0 && !chunkIdParam) {
       setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
     }
-  }, [location, chunks, isLoadingChunks, params?.id, currentChunkId]);
-
-  const currentChunk = currentChunkId 
-    ? chunks.find(chunk => chunk.id === currentChunkId)
-    : chunks[0];
+  }, [chunks.length, chunkIdParam, params?.id]);
 
   if (isLoadingManuscript || isLoadingChunks) {
     return (
@@ -66,6 +57,10 @@ export function Reader() {
     return null;
   }
 
+  const currentChunk = currentChunkId 
+    ? chunks.find(chunk => chunk.id === currentChunkId)
+    : chunks[0];
+
   const isAuthor = user?.id === manuscript.authorId;
 
   const handleChunkChange = (chunkId: number) => {
@@ -73,6 +68,10 @@ export function Reader() {
       setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
     }
   };
+
+  if (!currentChunk) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen pb-24">
@@ -84,14 +83,12 @@ export function Reader() {
           </p>
         </header>
 
-        {currentChunk && (
-          <ChunkView
-            chunk={currentChunk}
-            isAuthor={isAuthor}
-            onChunkChange={handleChunkChange}
-            allChunks={chunks}
-          />
-        )}
+        <ChunkView
+          chunk={currentChunk}
+          isAuthor={isAuthor}
+          onChunkChange={handleChunkChange}
+          allChunks={chunks}
+        />
       </div>
     </div>
   );
