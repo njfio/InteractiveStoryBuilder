@@ -145,9 +145,20 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           </div>
         )}
 
-        {isAuthor && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
+        <div className="flex items-center justify-start gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={playTTS}
+            disabled={isPlaying}
+          >
+            <Play className={isPlaying ? 'text-primary' : ''} />
+          </Button>
+          <Button variant="outline" size="icon" onClick={shareChunk}>
+            <Share2 />
+          </Button>
+          {isAuthor && (
+            <>
               <ImageGenerator 
                 key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
                 chunkId={chunk.id} 
@@ -180,22 +191,8 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
                   />
                 </DialogContent>
               </Dialog>
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={playTTS}
-            disabled={isPlaying}
-          >
-            <Play className={isPlaying ? 'text-primary' : ''} />
-          </Button>
-          <Button variant="outline" size="icon" onClick={shareChunk}>
-            <Share2 />
-          </Button>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
