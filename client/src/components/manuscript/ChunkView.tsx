@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
 import { ChapterSelect } from './ChapterSelect';
+import { ImageGenerator } from './ImageGenerator';
+import { ManuscriptImageSettings } from './ManuscriptImageSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Play, 
   Share2, 
+  Settings2,
   Loader2, 
   Images, 
   ChevronLeft, 
@@ -19,6 +22,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface ChunkViewProps {
   chunk: {
@@ -28,6 +42,17 @@ interface ChunkViewProps {
     headingH2?: string;
     text: string;
     imageUrl?: string;
+    manuscript?: {
+      imageSettings: {
+        seed: number;
+        prompt: string;
+        aspect_ratio: string;
+        image_reference_url: string | null;
+        style_reference_url: string | null;
+        image_reference_weight: number;
+        style_reference_weight: number;
+      };
+    };
   };
   isAuthor: boolean;
   onChunkChange: (chunkId: number) => void;
@@ -37,6 +62,9 @@ interface ChunkViewProps {
 export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkViewProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [chapterSelectOpen, setChapterSelectOpen] = useState(false);
+  const { toast } = useToast();
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const queryClient = useQueryClient();
   const currentChunkIndex = allChunks.findIndex(c => c.id === chunk.id);
 
   const handlePreviousPage = () => {
@@ -51,6 +79,97 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
     }
   };
 
+  const generateImage = useMutation({
+    mutationFn: async (chunkData: { chunkId: number; prompt: string }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Please sign in to generate images');
+      }
+
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify(chunkData),
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please sign in to generate images');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate image');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Image generated successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${chunk.manuscriptId}/chunks`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate image',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const playTTS = async () => {
+    try {
+      setIsPlaying(true);
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: chunk.text }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate audio');
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      if (audio) {
+        audio.pause();
+        URL.revokeObjectURL(audio.src);
+      }
+
+      const newAudio = new Audio(audioUrl);
+      newAudio.onended = () => {
+        setIsPlaying(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+      newAudio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setIsPlaying(false);
+        toast({
+          title: 'Error',
+          description: 'Failed to play audio',
+          variant: 'destructive',
+        });
+      };
+      setAudio(newAudio);
+      await newAudio.play();
+    } catch (error) {
+      setIsPlaying(false);
+      toast({
+        title: 'Error',
+        description: (error as Error).message || 'Failed to generate audio',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleShareChunk = async () => {
     try {
       await navigator.share({
@@ -60,7 +179,11 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
       });
     } catch (error) {
       if ((error as Error).name !== 'AbortError') {
-        console.error('Failed to share:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to share',
+          variant: 'destructive',
+        });
       }
     }
   };
@@ -127,7 +250,7 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setIsPlaying(!isPlaying)}
+                      onClick={playTTS}
                       disabled={isPlaying}
                     >
                       <Play className={isPlaying ? 'text-primary' : ''} />
@@ -194,6 +317,84 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
             </div>
 
             <div className="w-1/3 flex items-center justify-end gap-2">
+              {isAuthor && (
+                <TooltipProvider>
+                  <Dialog>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Settings2 className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Image Generation Settings</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Image Generation</DialogTitle>
+                        <DialogDescription>
+                          Customize and generate images for this section of your manuscript
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-6">
+                        <ImageGenerator 
+                          key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
+                          chunkId={chunk.id} 
+                          manuscriptId={chunk.manuscriptId} 
+                        />
+                        <ManuscriptImageSettings 
+                          manuscriptId={chunk.manuscriptId} 
+                          currentSettings={chunk.manuscript?.imageSettings || {
+                            seed: 469,
+                            prompt: "",
+                            aspect_ratio: "9:16",
+                            image_reference_url: null,
+                            style_reference_url: null,
+                            image_reference_weight: 0.85,
+                            style_reference_weight: 0.85
+                          }} 
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </TooltipProvider>
+              )}
+              
+              {isAuthor && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          generateImage.mutate({ 
+                            chunkId: chunk.id,
+                            prompt: chunk.text 
+                          });
+                        }}
+                        disabled={generateImage.isPending}
+                        size="sm"
+                      >
+                        {generateImage.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate Image'
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Generate New Image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
