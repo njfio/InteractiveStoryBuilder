@@ -1,0 +1,88 @@
+Console.js:61 Warning: `value` prop on `input` should not be null. Consider using an empty string to clear the component or `undefined` for uncontrolled components.
+    at input
+    at _c (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/input.tsx:20:11)
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-5HD3E6E6.js?v=b88784fc:52:11
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-5HD3E6E6.js?v=b88784fc:33:11
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/form.tsx:127:9
+    at div
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/form.tsx:71:6
+    at Controller (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…nner/workspace/node_modules/.vite/deps/chunk-EV5STJTR.js?v=b88784fc:313:35)
+    at FormField (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/form.tsx:32:6)
+    at form
+    at FormProvider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…nner/workspace/node_modules/.vite/deps/chunk-EV5STJTR.js?v=b88784fc:102:11)
+    at div
+    at _c9 (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:106:12)
+    at div
+    at _c (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:20:11)
+    at ManuscriptImageSettings (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/manuscript/ManuscriptImageSettings.tsx:46:43)
+    at div
+    at div
+    at _c9 (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:106:12)
+    at div
+    at _c (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:20:11)
+    at ChunkView (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/manuscript/ChunkView.tsx:25:29)
+    at div
+    at div
+    at Reader (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/pages/Reader.tsx:27:22)
+    at Route (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=62b143a2:323:16)
+    at Switch (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=62b143a2:379:17)
+    at App (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/App.tsx:27:3)
+    at QueryClientProvider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=4872f653:2796:3)
+ImageGenerator.tsx:23 Uncaught ReferenceError: useEffect is not defined
+    at ImageGenerator (ImageGenerator.tsx:23:3)
+    at renderWithHooks (chunk-UPELNCPK.js?v=b88784fc:11548:26)
+    at mountIndeterminateComponent (chunk-UPELNCPK.js?v=b88784fc:14926:21)
+    at beginWork (chunk-UPELNCPK.js?v=b88784fc:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-UPELNCPK.js?v=b88784fc:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-UPELNCPK.js?v=b88784fc:3699:24)
+    at invokeGuardedCallback (chunk-UPELNCPK.js?v=b88784fc:3733:39)
+    at beginWork$1 (chunk-UPELNCPK.js?v=b88784fc:19765:15)
+    at performUnitOfWork (chunk-UPELNCPK.js?v=b88784fc:19198:20)
+    at workLoopSync (chunk-UPELNCPK.js?v=b88784fc:19137:13)
+ImageGenerator.tsx:23 Uncaught ReferenceError: useEffect is not defined
+    at ImageGenerator (ImageGenerator.tsx:23:3)
+    at renderWithHooks (chunk-UPELNCPK.js?v=b88784fc:11548:26)
+    at mountIndeterminateComponent (chunk-UPELNCPK.js?v=b88784fc:14926:21)
+    at beginWork (chunk-UPELNCPK.js?v=b88784fc:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-UPELNCPK.js?v=b88784fc:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-UPELNCPK.js?v=b88784fc:3699:24)
+    at invokeGuardedCallback (chunk-UPELNCPK.js?v=b88784fc:3733:39)
+    at beginWork$1 (chunk-UPELNCPK.js?v=b88784fc:19765:15)
+    at performUnitOfWork (chunk-UPELNCPK.js?v=b88784fc:19198:20)
+    at workLoopSync (chunk-UPELNCPK.js?v=b88784fc:19137:13)
+Console.js:61 The above error occurred in the <ImageGenerator> component:
+
+    at ImageGenerator (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/manuscript/ImageGenerator.tsx:26:34)
+    at div
+    at div
+    at _c9 (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:106:12)
+    at div
+    at _c (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:20:11)
+    at ChunkView (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/manuscript/ChunkView.tsx:25:29)
+    at div
+    at div
+    at Reader (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/pages/Reader.tsx:27:22)
+    at Route (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=62b143a2:323:16)
+    at Switch (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=62b143a2:379:17)
+    at App (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/App.tsx:27:3)
+    at QueryClientProvider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=4872f653:2796:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-UPELNCPK.js?v=b88784fc:9129 Uncaught ReferenceError: useEffect is not defined
+    at ImageGenerator (ImageGenerator.tsx:23:3)
+    at renderWithHooks (chunk-UPELNCPK.js?v=b88784fc:11548:26)
+    at mountIndeterminateComponent (chunk-UPELNCPK.js?v=b88784fc:14926:21)
+    at beginWork (chunk-UPELNCPK.js?v=b88784fc:15914:22)
+    at beginWork$1 (chunk-UPELNCPK.js?v=b88784fc:19753:22)
+    at performUnitOfWork (chunk-UPELNCPK.js?v=b88784fc:19198:20)
+    at workLoopSync (chunk-UPELNCPK.js?v=b88784fc:19137:13)
+    at renderRootSync (chunk-UPELNCPK.js?v=b88784fc:19116:15)
+    at recoverFromConcurrentError (chunk-UPELNCPK.js?v=b88784fc:18736:28)
+    at performSyncWorkOnRoot (chunk-UPELNCPK.js?v=b88784fc:18879:28)
+_app-5fe57646a8c5daa2.js:16 
+ POST https://events.launchdarkly.com/events/bulk/62b35a8… net::ERR_BLOCKED_BY_CLIENT
+_app-5fe57646a8c5daa2.js:16 
+ POST https://events.launchdarkly.com/events/bulk/62b35a8… net::ERR_BLOCKED_BY_CLIENT
+﻿
+

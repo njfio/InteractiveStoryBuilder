@@ -67,17 +67,13 @@ export function ManuscriptImageSettings({ manuscriptId, currentSettings }: Manus
         description: 'Image settings updated successfully',
       });
 
-      // Invalidate queries and refetch immediately
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${manuscriptId}`] }),
-        queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${manuscriptId}/chunks`] })
-      ]);
+      // Invalidate and refetch queries
+      await queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${manuscriptId}`] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${manuscriptId}/chunks`] });
       
-      // Force refetch
-      await Promise.all([
-        queryClient.refetchQueries({ queryKey: [`/api/manuscripts/${manuscriptId}`] }),
-        queryClient.refetchQueries({ queryKey: [`/api/manuscripts/${manuscriptId}/chunks`] })
-      ]);
+      // Force immediate refetch
+      await queryClient.refetchQueries({ queryKey: [`/api/manuscripts/${manuscriptId}`] });
+      await queryClient.refetchQueries({ queryKey: [`/api/manuscripts/${manuscriptId}/chunks`] });
     } catch (error) {
       toast({
         title: 'Error',
