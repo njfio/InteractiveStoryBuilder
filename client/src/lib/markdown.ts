@@ -5,8 +5,7 @@ import { visit } from 'unist-util-visit';
 import { Node } from 'unist';
 
 interface ChunkData {
-  headingH1?: string;
-  headingH2?: string;
+  headingH1?: string; // Will store H3 titles
   text: string;
   order: number;
 }
@@ -28,10 +27,12 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
         currentChunk = { order: ++chunkOrder };
       }
 
-      if (node.depth === 2) {
+      if (node.depth === 3) {
+        if (currentChunk.text) {
+          chunks.push(currentChunk as ChunkData);
+          currentChunk = { order: ++chunkOrder };
+        }
         currentChunk.headingH1 = getHeadingText(node);
-      } else if (node.depth === 3) {
-        currentChunk.headingH2 = getHeadingText(node);
       }
     } else if (node.type === 'paragraph') {
       if (currentChunk.text) {
