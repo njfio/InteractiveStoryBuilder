@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,12 +9,14 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ImageGeneratorProps {
   chunkId: number;
+  manuscriptId: number;
 }
 
-export function ImageGenerator({ chunkId }: ImageGeneratorProps) {
+export function ImageGenerator({ chunkId, manuscriptId }: ImageGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [prompt, setPrompt] = useState('');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const generateImage = async () => {
     setIsGenerating(true);
@@ -36,6 +39,9 @@ export function ImageGenerator({ chunkId }: ImageGeneratorProps) {
         title: 'Success',
         description: 'Image generated successfully',
       });
+      
+      // Invalidate the chunks query to refresh the UI
+      queryClient.invalidateQueries([`/api/manuscripts/${manuscriptId}/chunks`]);
     } catch (error) {
       toast({
         title: 'Error',

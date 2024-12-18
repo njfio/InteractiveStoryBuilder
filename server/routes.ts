@@ -137,6 +137,9 @@ export function registerRoutes(app: Express): Server {
 
       console.log(`Generating image for chunk ${chunkId} with prompt: ${prompt}`);
 
+      // Delete any existing images for this chunk
+      await db.delete(images).where(eq(images.chunkId, chunkId));
+
       const imageUrl = await generateImage(prompt || chunk.text);
 
       console.log('Creating image record in database');

@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ChunkViewProps {
   chunk: {
     id: number;
+    manuscriptId: number;
     headingH1?: string;
     headingH2?: string;
     text: string;
@@ -108,7 +109,7 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           </div>
         )}
 
-        {isAuthor && <ImageGenerator chunkId={chunk.id} />}
+        {isAuthor && <ImageGenerator chunkId={chunk.id} manuscriptId={chunk.manuscriptId} />}
 
         <div className="flex gap-2">
           <Button
