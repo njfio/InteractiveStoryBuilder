@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRoute, useLocation } from 'wouter';
 import { ChunkView } from '@/components/manuscript/ChunkView';
@@ -8,9 +8,16 @@ import { Loader2 } from 'lucide-react';
 
 export function Reader() {
   const [, params] = useRoute('/reader/:id');
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user } = useAuthStore();
-  const [currentChunkId, setCurrentChunkId] = useState<number | null>(null);
+
+  // Get chunkId from URL query parameters
+  const searchParams = new URLSearchParams(location.split('?')[1]);
+  const chunkIdFromUrl = searchParams.get('chunk');
+  
+  const [currentChunkId, setCurrentChunkId] = useState<number | null>(
+    chunkIdFromUrl ? parseInt(chunkIdFromUrl) : null
+  );
 
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<{
     id: number;
@@ -33,6 +40,26 @@ export function Reader() {
     enabled: !!params?.id,
   });
 
+  // Effect to update URL when chunk changes
+  useEffect(() => {
+    if (chunks.length > 0) {
+      const targetChunkId = currentChunkId || chunks[0]?.id;
+      if (targetChunkId && !chunkIdFromUrl) {
+        setLocation(`/reader/${params?.id}?chunk=${targetChunkId}`);
+      }
+    }
+  }, [chunks, currentChunkId, params?.id]);
+
+  // Effect to handle URL chunk parameter changes
+  useEffect(() => {
+    if (chunkIdFromUrl) {
+      const parsedChunkId = parseInt(chunkIdFromUrl);
+      if (parsedChunkId !== currentChunkId) {
+        setCurrentChunkId(parsedChunkId);
+      }
+    }
+  }, [chunkIdFromUrl]);
+
   if (isLoadingManuscript || isLoadingChunks) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -52,6 +79,10 @@ export function Reader() {
 
   const isAuthor = user?.id === manuscript.authorId;
 
+  const handleChunkChange = (chunkId: number) => {
+    setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
+  };
+
   return (
     <div className="min-h-screen pb-24">
       <div className="max-w-4xl mx-auto p-6">
@@ -66,15 +97,11 @@ export function Reader() {
           <ChunkView
             chunk={currentChunk}
             isAuthor={isAuthor}
+            onChunkChange={handleChunkChange}
+            allChunks={chunks}
           />
         )}
       </div>
-
-      <Navigation
-        chunks={chunks}
-        currentChunk={currentChunkId || chunks[0]?.id}
-        onNavigate={setCurrentChunkId}
-      />
     </div>
   );
 }

@@ -149,7 +149,10 @@ export function ImageGallery({ manuscriptId }: ImageGalleryProps) {
           <Card key={image.id} className="overflow-hidden">
             <div 
               className="relative aspect-[9/16] cursor-pointer"
-              onClick={() => setLocation(`/reader/${image.manuscriptId}?chunk=${image.chunkId}`)}
+              onClick={() => {
+                setLocation(`/reader/${image.manuscriptId}?chunk=${image.chunkId}`);
+                window.scrollTo(0, 0);
+              }}
             >
               <img
                 src={window.location.origin + image.localPath}

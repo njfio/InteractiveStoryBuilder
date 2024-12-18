@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'wouter';
+import { useState } from 'react';
+import { Link } from 'wouter';
+import { ChapterSelect } from './ChapterSelect';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageGenerator } from './ImageGenerator';
@@ -54,52 +55,29 @@ interface ChunkViewProps {
     };
   };
   isAuthor: boolean;
+  onChunkChange: (chunkId: number) => void;
+  allChunks: Array<any>;
 }
 
-export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
+export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkViewProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const { toast } = useToast();
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const queryClient = useQueryClient();
-  const [allChunks, setAllChunks] = useState<any[]>([]);
-  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
-
-  // Load all chunks when component mounts
-  useEffect(() => {
-    const loadChunks = async () => {
-      try {
-        const response = await fetch(`/api/manuscripts/${chunk.manuscriptId}/chunks`);
-        if (!response.ok) throw new Error('Failed to load chunks');
-        const chunks = await response.json();
-        setAllChunks(chunks);
-        // Find current chunk index
-        const index = chunks.findIndex((c: any) => c.id === chunk.id);
-        setCurrentChunkIndex(index !== -1 ? index : 0);
-      } catch (error) {
-        console.error('Error loading chunks:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load manuscript chunks',
-          variant: 'destructive',
-        });
-      }
-    };
-    loadChunks();
-  }, [chunk.manuscriptId, chunk.id]);
-
-  const [, setLocation] = useLocation();
+  const currentChunkIndex = allChunks.findIndex(c => c.id === chunk.id);
+  const [chapterSelectOpen, setChapterSelectOpen] = useState(false);
 
   const handlePreviousPage = () => {
     if (currentChunkIndex > 0) {
       const prevChunk = allChunks[currentChunkIndex - 1];
-      setLocation(`/reader/${chunk.manuscriptId}?chunk=${prevChunk.id}`);
+      onChunkChange(prevChunk.id);
     }
   };
 
   const handleNextPage = () => {
     if (currentChunkIndex < allChunks.length - 1) {
       const nextChunk = allChunks[currentChunkIndex + 1];
-      setLocation(`/reader/${chunk.manuscriptId}?chunk=${nextChunk.id}`);
+      onChunkChange(nextChunk.id);
     }
   };
 
@@ -295,7 +273,11 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setChapterSelectOpen(true)}
+                    >
                       <BookOpen className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -303,6 +285,14 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
                     <p>Chapter Select</p>
                   </TooltipContent>
                 </Tooltip>
+
+                <ChapterSelect
+                  chunks={allChunks}
+                  currentChunkId={chunk.id}
+                  onChunkSelect={onChunkChange}
+                  open={chapterSelectOpen}
+                  onOpenChange={setChapterSelectOpen}
+                />
 
                 {isAuthor && (
                   <Dialog>
