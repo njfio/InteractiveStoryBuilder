@@ -98,22 +98,40 @@ export function registerRoutes(app: Express): Server {
 
   // Chunks
   app.get('/api/manuscripts/:id/chunks', async (req, res) => {
-    const results = await db.query.chunks.findMany({
-      where: eq(chunks.manuscriptId, parseInt(req.params.id)),
-      with: {
-        images: true,
-        manuscript: true,
-      },
-      orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
-    });
+    console.time('chunks-query');
+    try {
+      const results = await db.query.chunks.findMany({
+        where: eq(chunks.manuscriptId, parseInt(req.params.id)),
+        columns: {
+          id: true,
+          manuscriptId: true,
+          chunkOrder: true,
+          headingH1: true,
+          headingH2: true,
+          text: true,
+        },
+        with: {
+          images: {
+            columns: {
+              localPath: true,
+            },
+            limit: 1,
+          },
+        },
+        orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
+      });
 
-    // Add image URLs to the response
-    const chunksWithImages = results.map(chunk => ({
-      ...chunk,
-      imageUrl: chunk.images?.[0]?.localPath
-    }));
+      const chunksWithImages = results.map(chunk => ({
+        ...chunk,
+        imageUrl: chunk.images?.[0]?.localPath
+      }));
 
-    res.json(chunksWithImages);
+      console.timeEnd('chunks-query');
+      res.json(chunksWithImages);
+    } catch (error) {
+      console.error('Error fetching chunks:', error);
+      res.status(500).json({ message: 'Failed to fetch chunks' });
+    }
   });
 
   // Manuscript Settings

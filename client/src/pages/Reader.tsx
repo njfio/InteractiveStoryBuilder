@@ -9,6 +9,7 @@ export function Reader() {
   const [, params] = useRoute('/reader/:id');
   const [location, setLocation] = useLocation();
   const { user } = useAuthStore();
+  const [currentChunkId, setCurrentChunkId] = useState<number | null>(null);
 
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<{
     id: number;
@@ -32,19 +33,25 @@ export function Reader() {
     enabled: !!params?.id,
   });
 
-  // Get current chunk ID from URL
-  const searchParams = new URLSearchParams(location.split('?')[1]);
-  const currentChunkId = searchParams.get('chunk');
-  const currentChunk = currentChunkId 
-    ? chunks.find(chunk => chunk.id === parseInt(currentChunkId))
-    : chunks[0];
-
-  // Set initial chunk if none specified
+  // Handle URL changes and initial load
   useEffect(() => {
-    if (chunks.length > 0 && !currentChunkId) {
+    const searchParams = new URLSearchParams(location.split('?')[1]);
+    const chunkId = searchParams.get('chunk');
+    
+    if (chunkId) {
+      const parsedId = parseInt(chunkId);
+      if (parsedId !== currentChunkId) {
+        setCurrentChunkId(parsedId);
+      }
+    } else if (chunks.length > 0 && !isLoadingChunks) {
+      // If no chunk specified, redirect to the first chunk
       setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
     }
-  }, [chunks, currentChunkId, params?.id]);
+  }, [location, chunks, isLoadingChunks, params?.id, currentChunkId]);
+
+  const currentChunk = currentChunkId 
+    ? chunks.find(chunk => chunk.id === currentChunkId)
+    : chunks[0];
 
   if (isLoadingManuscript || isLoadingChunks) {
     return (
@@ -62,9 +69,8 @@ export function Reader() {
   const isAuthor = user?.id === manuscript.authorId;
 
   const handleChunkChange = (chunkId: number) => {
-    if (chunkId !== parseInt(currentChunkId || '0')) {
+    if (chunkId !== currentChunkId) {
       setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
-      window.scrollTo(0, 0);
     }
   };
 

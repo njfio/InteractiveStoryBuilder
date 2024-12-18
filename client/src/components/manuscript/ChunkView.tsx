@@ -69,19 +69,13 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
 
   const handlePreviousPage = () => {
     if (currentChunkIndex > 0) {
-      const prevChunk = allChunks[currentChunkIndex - 1];
-      if (prevChunk) {
-        onChunkChange(prevChunk.id);
-      }
+      onChunkChange(allChunks[currentChunkIndex - 1].id);
     }
   };
 
   const handleNextPage = () => {
     if (currentChunkIndex < allChunks.length - 1) {
-      const nextChunk = allChunks[currentChunkIndex + 1];
-      if (nextChunk) {
-        onChunkChange(nextChunk.id);
-      }
+      onChunkChange(allChunks[currentChunkIndex + 1].id);
     }
   };
 
@@ -215,18 +209,6 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
               src={window.location.origin + chunk.imageUrl}
               alt="Generated illustration"
               className="object-contain w-full h-full"
-              onError={(e) => {
-                console.error('Error loading image:', e);
-                const fallbackSVG = `
-                  <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="100%" height="100%" fill="#f0f0f0"/>
-                    <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#666" text-anchor="middle">
-                      Image loading failed
-                    </text>
-                  </svg>
-                `;
-                e.currentTarget.src = `data:image/svg+xml;base64,${btoa(fallbackSVG)}`;
-              }}
             />
           </div>
         )}
