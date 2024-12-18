@@ -78,7 +78,6 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
         title: 'Success',
         description: 'Image generated successfully',
       });
-      // Invalidate and refetch the chunks query to update the UI
       queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${chunk.manuscriptId}/chunks`] });
     },
     onError: (error: Error) => {
@@ -115,7 +114,7 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
       const newAudio = new Audio(audioUrl);
       newAudio.onended = () => {
         setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl); // Clean up the URL when done
+        URL.revokeObjectURL(audioUrl);
       };
       newAudio.onerror = (e) => {
         console.error('Audio playback error:', e);
@@ -263,8 +262,7 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
             </>
           )}
         </div>
-
-        <div className="mt-8 flex items-center justify-between border-t pt-4">
+      <div className="mt-8 flex items-center justify-between border-t pt-4">
           <div className="w-24 flex justify-start">
             <Link href="/dashboard">
               <Button variant="ghost" size="icon">
