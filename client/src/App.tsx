@@ -3,6 +3,8 @@ import { Home } from "@/pages/Home";
 import { Login } from "@/pages/Login";
 import { Dashboard } from "@/pages/Dashboard";
 import { Reader } from "@/pages/Reader";
+import { Gallery } from "@/pages/Gallery";
+import { ManuscriptGallery } from "@/pages/ManuscriptGallery";
 import { useEffect } from "react";
 import { initAuth } from "@/lib/auth";
 
@@ -17,6 +19,8 @@ function App() {
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/reader/:id" component={Reader} />
+      <Route path="/gallery" component={Gallery} />
+      <Route path="/manuscripts/:id/gallery" component={ManuscriptGallery} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_ANON_KEY!
 );
 import { requireAuth } from './middleware/auth';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
 import { generateImage } from './utils/image';
 
@@ -218,6 +218,123 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error generating image:', error);
       res.status(500).json({ message: 'Failed to generate image' });
+    }
+  });
+
+  // Image Galleries
+  app.get('/api/images', async (req, res) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 12;
+    const offset = (page - 1) * limit;
+
+    const results = await db.query.images.findMany({
+      with: {
+        chunk: {
+          columns: {
+            id: true,
+            headingH1: true,
+            text: true,
+          }
+        },
+        manuscript: {
+          columns: {
+            id: true,
+            title: true,
+            authorId: true,
+          }
+        }
+      },
+      orderBy: (images, { desc }) => [desc(images.createdAt)],
+      limit,
+      offset,
+    });
+
+    const total = await db.select({ count: sql<number>`count(*)` }).from(images);
+
+    res.json({
+      images: results,
+      pagination: {
+        page,
+        limit,
+        total: total[0].count,
+        totalPages: Math.ceil(total[0].count / limit)
+      }
+    });
+  });
+
+  app.get('/api/manuscripts/:id/images', async (req, res) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 12;
+    const offset = (page - 1) * limit;
+
+    const results = await db.query.images.findMany({
+      where: eq(images.manuscriptId, parseInt(req.params.id)),
+      with: {
+        chunk: {
+          columns: {
+            id: true,
+            headingH1: true,
+            text: true,
+          }
+        }
+      },
+      orderBy: (images, { desc }) => [desc(images.createdAt)],
+      limit,
+      offset,
+    });
+
+    const total = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(images)
+      .where(eq(images.manuscriptId, parseInt(req.params.id)));
+
+    res.json({
+      images: results,
+      pagination: {
+        page,
+        limit,
+        total: total[0].count,
+        totalPages: Math.ceil(total[0].count / limit)
+      }
+    });
+  });
+
+  // Delete Image
+  app.delete('/api/images/:id', async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ message: 'No authorization header' });
+      }
+
+      const token = authHeader.split(' ')[1];
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      
+      if (error || !user) {
+        console.error('Auth error:', error);
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+
+      const image = await db.query.images.findFirst({
+        where: eq(images.id, parseInt(req.params.id)),
+        with: {
+          manuscript: true,
+        },
+      });
+
+      if (!image) {
+        return res.status(404).json({ message: 'Image not found' });
+      }
+
+      if (image.manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      await db.delete(images).where(eq(images.id, image.id));
+      res.status(204).end();
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      res.status(500).json({ message: 'Failed to delete image' });
     }
   });
 
