@@ -1,0 +1,27 @@
+[vite] connecting...
+[vite] connected.
+Initializing auth...
+Initial session: 
+Object {access_token: "eyJhbGciOiJIUzI1NiIsImtpZCI6ImtMOWk4ZmtvLy9qUmlxdkoiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3drdWlr…", token_type: "bearer", expires_in: 3600, expires_at: 1734543146, refresh_token: "Qvy67OwKmPD3iHrh3CyE0Q", …}
+Initial session: 
+Object {access_token: "eyJhbGciOiJIUzI1NiIsImtpZCI6ImtMOWk4ZmtvLy9qUmlxdkoiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3drdWlr…", token_type: "bearer", expires_in: 3600, expires_at: 1734543146, refresh_token: "Qvy67OwKmPD3iHrh3CyE0Q", …}
+Auth state changed: INITIAL_SESSION 
+Object {id: "16055978-e57b-4015-8b2f-26e897b2d6d9", aud: "authenticated", role: "authenticated", email: "me@njf.io", email_confirmed_at: "2024-12-18T15:31:33.020154Z", …}
+Auth state changed: INITIAL_SESSION 
+Object {id: "16055978-e57b-4015-8b2f-26e897b2d6d9", aud: "authenticated", role: "authenticated", email: "me@njf.io", email_confirmed_at: "2024-12-18T15:31:33.020154Z", …}
+ManuscriptImageSettings is not defined
+ManuscriptImageSettings is not defined
+The above error occurred in the <ChunkView> component:
+
+    at ChunkView (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/manuscript/ChunkView.tsx:24:29)
+    at div
+    at div
+    at Reader (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/pages/Reader.tsx:27:22)
+    at Route (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=31d78316:323:16)
+    at Switch (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=31d78316:379:17)
+    at App (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/App.tsx:27:3)
+    at QueryClientProvider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=31d78316:2805:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+ManuscriptImageSettings is not defined

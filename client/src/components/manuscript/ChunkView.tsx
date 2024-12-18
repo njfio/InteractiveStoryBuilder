@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageGenerator } from './ImageGenerator';
+import { ManuscriptImageSettings } from './ManuscriptImageSettings';
 import { Play, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -13,6 +14,17 @@ interface ChunkViewProps {
     headingH2?: string;
     text: string;
     imageUrl?: string;
+    manuscript?: {
+      imageSettings: {
+        seed: number;
+        prompt: string;
+        aspect_ratio: string;
+        image_reference_url: string | null;
+        style_reference_url: string | null;
+        image_reference_weight: number;
+        style_reference_weight: number;
+      };
+    };
   };
   isAuthor: boolean;
 }
