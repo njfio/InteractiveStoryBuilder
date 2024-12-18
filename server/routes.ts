@@ -174,9 +174,17 @@ export function registerRoutes(app: Express): Server {
       // Delete any existing images for this chunk
       await db.delete(images).where(eq(images.chunkId, chunkId));
 
+      // Get the manuscript with its settings
       const manuscript = await db.query.manuscripts.findFirst({
         where: eq(manuscripts.id, chunk.manuscriptId),
+        columns: {
+          id: true,
+          imageSettings: true,
+          authorId: true,
+        },
       });
+
+      console.log('Using manuscript settings:', manuscript?.imageSettings);
 
       const imageUrl = await generateImage(
         prompt || chunk.text,
