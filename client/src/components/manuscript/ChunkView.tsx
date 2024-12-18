@@ -161,16 +161,37 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
             <>
               <Button
                 variant="outline"
-                onClick={() => {
-                  const dialogTrigger = document.getElementById(`settings-dialog-${chunk.id}`);
-                  if (dialogTrigger) dialogTrigger.click();
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/generate-image', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        chunkId: chunk.id,
+                        prompt: chunk.text 
+                      }),
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error('Failed to generate image');
+                    }
+                    
+                    // Refresh the page to show new image
+                    window.location.reload();
+                  } catch (error) {
+                    toast({
+                      title: 'Error',
+                      description: 'Failed to generate image',
+                      variant: 'destructive',
+                    });
+                  }
                 }}
               >
                 Generate Image
               </Button>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button id={`settings-dialog-${chunk.id}`} variant="outline" size="icon">
+                  <Button variant="outline" size="icon">
                     <Settings2 className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
