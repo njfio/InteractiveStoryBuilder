@@ -8,15 +8,14 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// Get the Replit URL or fallback to localhost in development
-const siteUrl = import.meta.env.REPL_SLUG 
-  ? `https://${import.meta.env.REPL_SLUG}.${import.meta.env.REPL_OWNER}.repl.co`
-  : 'http://localhost:5000';
+// Get the current URL dynamically
+const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000';
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
   auth: {
     flowType: 'pkce',
     redirectTo: `${siteUrl}/login`,
+    detectSessionInUrl: true,
   },
 });
 
