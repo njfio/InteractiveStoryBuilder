@@ -227,8 +227,37 @@ export function registerRoutes(app: Express): Server {
   // Text-to-Speech
   app.post('/api/tts', async (req, res) => {
     const { text } = req.body;
-    // TODO: Implement actual TTS with Gemini API
-    res.status(501).send('Not implemented');
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ message: 'OpenAI API key not configured' });
+    }
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: "tts-1",
+          input: text,
+          voice: "alloy"
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('OpenAI API error:', error);
+        return res.status(response.status).json({ message: 'Failed to generate speech' });
+      }
+
+      const audioBuffer = await response.arrayBuffer();
+      res.set('Content-Type', 'audio/mpeg');
+      res.send(Buffer.from(audioBuffer));
+    } catch (error) {
+      console.error('TTS error:', error);
+      res.status(500).json({ message: 'Failed to generate speech' });
+    }
   });
 
   const httpServer = createServer(app);

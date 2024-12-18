@@ -36,13 +36,17 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
 
   const playTTS = async () => {
     try {
+      setIsPlaying(true);
       const response = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: chunk.text }),
       });
 
-      if (!response.ok) throw new Error('Failed to generate audio');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate audio');
+      }
 
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
@@ -53,14 +57,26 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
       }
 
       const newAudio = new Audio(audioUrl);
-      newAudio.onended = () => setIsPlaying(false);
+      newAudio.onended = () => {
+        setIsPlaying(false);
+        URL.revokeObjectURL(audioUrl); // Clean up the URL when done
+      };
+      newAudio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setIsPlaying(false);
+        toast({
+          title: 'Error',
+          description: 'Failed to play audio',
+          variant: 'destructive',
+        });
+      };
       setAudio(newAudio);
-      newAudio.play();
-      setIsPlaying(true);
+      await newAudio.play();
     } catch (error) {
+      setIsPlaying(false);
       toast({
         title: 'Error',
-        description: 'Failed to generate audio',
+        description: (error as Error).message || 'Failed to generate audio',
         variant: 'destructive',
       });
     }
