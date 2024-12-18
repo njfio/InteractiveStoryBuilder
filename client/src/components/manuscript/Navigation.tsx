@@ -24,6 +24,16 @@ export function Navigation({ chunks, currentChunk, onNavigate }: NavigationProps
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < chunks.length - 1;
 
+  // Group chunks by H1 headers
+  const groupedChunks = chunks.reduce((acc: { [key: string]: typeof chunks }, chunk) => {
+    const header = chunk.headingH1 || 'Untitled';
+    if (!acc[header]) {
+      acc[header] = [];
+    }
+    acc[header].push(chunk);
+    return acc;
+  }, {});
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -38,23 +48,25 @@ export function Navigation({ chunks, currentChunk, onNavigate }: NavigationProps
               <SheetTitle>Chapters</SheetTitle>
             </SheetHeader>
             <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
-              <div className="space-y-4">
-                {chunks.map((chunk) => (
-                  <Button
-                    key={chunk.id}
-                    variant={chunk.id === currentChunk ? 'default' : 'ghost'}
-                    className="w-full justify-start text-left"
-                    onClick={() => onNavigate(chunk.id)}
-                  >
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium truncate">
-                        {chunk.headingH1 || 'Untitled Section'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Section {chunk.order + 1}
-                      </span>
+              <div className="space-y-6">
+                {Object.entries(groupedChunks).map(([header, headerChunks]) => (
+                  <div key={header} className="space-y-1">
+                    <h3 className="font-semibold text-sm text-foreground mb-2">{header}</h3>
+                    <div className="pl-4 space-y-1">
+                      {headerChunks.map((chunk) => (
+                        <Button
+                          key={chunk.id}
+                          variant={chunk.id === currentChunk ? 'default' : 'ghost'}
+                          className="w-full justify-start text-left h-auto py-2"
+                          onClick={() => onNavigate(chunk.id)}
+                        >
+                          <span className="text-sm text-muted-foreground">
+                            Chunk {chunk.id}
+                          </span>
+                        </Button>
+                      ))}
                     </div>
-                  </Button>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
