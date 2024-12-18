@@ -5,33 +5,55 @@ import { ChunkView } from '@/components/manuscript/ChunkView';
 import { useAuthStore } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 
+interface Chunk {
+  id: number;
+  manuscriptId: number;
+  headingH1?: string;
+  headingH2?: string;
+  text: string;
+  imageUrl?: string;
+}
+
+interface Manuscript {
+  id: number;
+  title: string;
+  authorId: string;
+  author?: {
+    email: string;
+  };
+}
+
 export function Reader() {
   const [, params] = useRoute('/reader/:id');
   const [location, setLocation] = useLocation();
   const { user } = useAuthStore();
 
-  const { data: manuscript, isLoading: isLoadingManuscript } = useQuery({
+  // Query manuscript data
+  const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<Manuscript>({
     queryKey: [`/api/manuscripts/${params?.id}`],
     enabled: !!params?.id,
   });
 
-  const { data: chunks = [], isLoading: isLoadingChunks } = useQuery({
+  // Query chunks data
+  const { data: chunks = [], isLoading: isLoadingChunks } = useQuery<Chunk[]>({
     queryKey: [`/api/manuscripts/${params?.id}/chunks`],
     enabled: !!params?.id,
   });
 
-  // Parse current chunk ID from URL
-  const searchParams = new URLSearchParams(location.split('?')[1]);
+  // Get current chunk ID from URL
+  const searchParams = new URLSearchParams(window.location.search);
   const currentChunkId = searchParams.get('chunk') 
-    ? parseInt(searchParams.get('chunk')!) 
+    ? parseInt(searchParams.get('chunk')!)
     : null;
 
-  // Handle initial navigation
+  // Set initial chunk if none specified
   useEffect(() => {
     if (!isLoadingChunks && chunks.length > 0 && !currentChunkId) {
-      setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
+      setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`, {
+        replace: true
+      });
     }
-  }, [chunks, currentChunkId, params?.id, isLoadingChunks]);
+  }, [chunks, currentChunkId, params?.id, isLoadingChunks, setLocation]);
 
   if (isLoadingManuscript || isLoadingChunks) {
     return (
@@ -58,7 +80,10 @@ export function Reader() {
 
   const handleChunkChange = (chunkId: number) => {
     if (chunkId !== currentChunkId) {
-      setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
+      setLocation(`/reader/${params?.id}?chunk=${chunkId}`, {
+        replace: true
+      });
+      window.scrollTo(0, 0);
     }
   };
 
