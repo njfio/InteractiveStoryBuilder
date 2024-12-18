@@ -25,7 +25,7 @@ interface Manuscript {
 
 export function Reader() {
   const [, params] = useRoute('/reader/:id');
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { user } = useAuthStore();
 
   // Query manuscript data
@@ -49,9 +49,8 @@ export function Reader() {
   // Set initial chunk if none specified
   useEffect(() => {
     if (!isLoadingChunks && chunks.length > 0 && !currentChunkId) {
-      setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`, {
-        replace: true
-      });
+      setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
+      window.scrollTo(0, 0);
     }
   }, [chunks, currentChunkId, params?.id, isLoadingChunks, setLocation]);
 
@@ -80,9 +79,7 @@ export function Reader() {
 
   const handleChunkChange = (chunkId: number) => {
     if (chunkId !== currentChunkId) {
-      setLocation(`/reader/${params?.id}?chunk=${chunkId}`, {
-        replace: true
-      });
+      setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
       window.scrollTo(0, 0);
     }
   };

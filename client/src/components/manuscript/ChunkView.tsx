@@ -61,29 +61,21 @@ interface ChunkViewProps {
 
 export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkViewProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [chapterSelectOpen, setChapterSelectOpen] = useState(false);
   const { toast } = useToast();
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const queryClient = useQueryClient();
   const currentChunkIndex = allChunks.findIndex(c => c.id === chunk.id);
-  const [chapterSelectOpen, setChapterSelectOpen] = useState(false);
 
   const handlePreviousPage = () => {
     if (currentChunkIndex > 0) {
-      const prevChunk = allChunks[currentChunkIndex - 1];
-      if (prevChunk) {
-        onChunkChange(prevChunk.id);
-        window.scrollTo(0, 0);
-      }
+      onChunkChange(allChunks[currentChunkIndex - 1].id);
     }
   };
 
   const handleNextPage = () => {
     if (currentChunkIndex < allChunks.length - 1) {
-      const nextChunk = allChunks[currentChunkIndex + 1];
-      if (nextChunk) {
-        onChunkChange(nextChunk.id);
-        window.scrollTo(0, 0);
-      }
+      onChunkChange(allChunks[currentChunkIndex + 1].id);
     }
   };
 
@@ -227,6 +219,30 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setChapterSelectOpen(true)}
+                    >
+                      <BookOpen className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Chapter Select</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <ChapterSelect
+                chunks={allChunks}
+                currentChunkId={chunk.id}
+                onChunkSelect={onChunkChange}
+                open={chapterSelectOpen}
+                onOpenChange={setChapterSelectOpen}
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Link href="/dashboard">
                       <Button variant="ghost" size="icon">
                         <Home className="h-4 w-4" />
@@ -264,73 +280,6 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                     <p>Share this section</p>
                   </TooltipContent>
                 </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => setChapterSelectOpen(true)}
-                    >
-                      <BookOpen className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Chapter Select</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <ChapterSelect
-                  chunks={allChunks}
-                  currentChunkId={chunk.id}
-                  onChunkSelect={onChunkChange}
-                  open={chapterSelectOpen}
-                  onOpenChange={setChapterSelectOpen}
-                />
-
-                {isAuthor && (
-                  <Dialog>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Settings2 className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Image Generation Settings</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Image Generation</DialogTitle>
-                        <DialogDescription>
-                          Customize and generate images for this section of your manuscript
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-6">
-                        <ImageGenerator 
-                          key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
-                          chunkId={chunk.id} 
-                          manuscriptId={chunk.manuscriptId} 
-                        />
-                        <ManuscriptImageSettings 
-                          manuscriptId={chunk.manuscriptId} 
-                          currentSettings={chunk.manuscript?.imageSettings || {
-                            seed: 469,
-                            prompt: "",
-                            aspect_ratio: "9:16",
-                            image_reference_url: null,
-                            style_reference_url: null,
-                            image_reference_weight: 0.85,
-                            style_reference_weight: 0.85
-                          }} 
-                        />
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
               </TooltipProvider>
             </div>
             <div className="w-1/3 flex items-center justify-center gap-4">
