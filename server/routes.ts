@@ -2,6 +2,7 @@ import type { Express, Request } from 'express';
 import { createServer, type Server } from 'http';
 import { db } from '@db';
 import { manuscripts, chunks, images, seoMetadata } from '@db/schema';
+import { requireAuth } from './middleware/auth';
 import { eq } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
 
@@ -39,11 +40,9 @@ export function registerRoutes(app: Express): Server {
     res.json(result);
   });
 
-  app.post('/api/manuscripts', async (req, res) => {
+  app.post('/api/manuscripts', requireAuth, async (req, res) => {
     const { title, markdown } = req.body;
-    const user = req.user as any; // From auth middleware
-
-    if (!user) return res.status(401).send('Unauthorized');
+    const user = req.user;
 
     const parsedChunks = await parseMarkdown(markdown);
 
