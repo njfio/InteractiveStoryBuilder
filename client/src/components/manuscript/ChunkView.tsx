@@ -4,7 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageGenerator } from './ImageGenerator';
 import { ManuscriptImageSettings } from './ManuscriptImageSettings';
-import { Play, Share2, Settings2, Loader2, Images, ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { 
+  Play, 
+  Share2, 
+  Settings2, 
+  Loader2, 
+  Images, 
+  ChevronLeft, 
+  ChevronRight, 
+  Home,
+  BookOpen
+} from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -42,9 +58,25 @@ interface ChunkViewProps {
 
 export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = 10; // This should come from your data
   const { toast } = useToast();
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const queryClient = useQueryClient();
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+      // Add your page navigation logic here
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+      // Add your page navigation logic here
+    }
+  };
 
   const generateImage = useMutation({
     mutationFn: async (chunkData: { chunkId: number; prompt: string }) => {
@@ -195,96 +227,190 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg py-4 px-6 z-50">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="w-1/3 flex items-center gap-2">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="icon">
-                  <Home className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={playTTS}
-                disabled={isPlaying}
-              >
-                <Play className={isPlaying ? 'text-primary' : ''} />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={shareChunk}>
-                <Share2 />
-              </Button>
-              {isAuthor && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Settings2 className="h-4 w-4" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/dashboard">
+                      <Button variant="ghost" size="icon">
+                        <Home className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Back to Dashboard</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={playTTS}
+                      disabled={isPlaying}
+                    >
+                      <Play className={isPlaying ? 'text-primary' : ''} />
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Image Generation</DialogTitle>
-                      <DialogDescription>
-                        Generate and configure images for this section
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-6">
-                      <ImageGenerator 
-                        key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
-                        chunkId={chunk.id} 
-                        manuscriptId={chunk.manuscriptId} 
-                      />
-                      <ManuscriptImageSettings 
-                        manuscriptId={chunk.manuscriptId} 
-                        currentSettings={chunk.manuscript?.imageSettings || {
-                          seed: 469,
-                          prompt: "",
-                          aspect_ratio: "9:16",
-                          image_reference_url: null,
-                          style_reference_url: null,
-                          image_reference_weight: 0.85,
-                          style_reference_weight: 0.85
-                        }} 
-                      />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Play Text-to-Speech</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={shareChunk}>
+                      <Share2 />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Share this section</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <BookOpen className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Chapter Select</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {isAuthor && (
+                  <Dialog>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Settings2 className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Image Generation Settings</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Image Generation</DialogTitle>
+                        <DialogDescription>
+                          Generate and configure images for this section
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-6">
+                        <ImageGenerator 
+                          key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
+                          chunkId={chunk.id} 
+                          manuscriptId={chunk.manuscriptId} 
+                        />
+                        <ManuscriptImageSettings 
+                          manuscriptId={chunk.manuscriptId} 
+                          currentSettings={chunk.manuscript?.imageSettings || {
+                            seed: 469,
+                            prompt: "",
+                            aspect_ratio: "9:16",
+                            image_reference_url: null,
+                            style_reference_url: null,
+                            image_reference_weight: 0.85,
+                            style_reference_weight: 0.85
+                          }} 
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </TooltipProvider>
             </div>
             <div className="w-1/3 flex items-center justify-center gap-4">
-              <Button variant="outline" size="icon">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm text-muted-foreground">Page 1 of 10</span>
-              <Button variant="outline" size="icon">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={handlePreviousPage}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Previous Page</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Next Page</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="w-1/3 flex items-center justify-end gap-2">
               {isAuthor && (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    generateImage.mutate({ 
-                      chunkId: chunk.id,
-                      prompt: chunk.text 
-                    });
-                  }}
-                  disabled={generateImage.isPending}
-                  size="sm"
-                >
-                  {generateImage.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate Image'
-                  )}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          generateImage.mutate({ 
+                            chunkId: chunk.id,
+                            prompt: chunk.text 
+                          });
+                        }}
+                        disabled={generateImage.isPending}
+                        size="sm"
+                      >
+                        {generateImage.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate Image'
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Generate New Image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
-              <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
-                <Button variant="ghost" size="icon">
-                  <Images className="h-4 w-4" />
-                </Button>
-              </Link>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
+                      <Button variant="ghost" size="icon">
+                        <Images className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>View Image Gallery</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
