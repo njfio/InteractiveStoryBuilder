@@ -10,39 +10,28 @@ export function Reader() {
   const [location, setLocation] = useLocation();
   const { user } = useAuthStore();
 
-  const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<{
-    id: number;
-    title: string;
-    authorId: string;
-    author?: { email: string };
-  }>({
+  const { data: manuscript, isLoading: isLoadingManuscript } = useQuery({
     queryKey: [`/api/manuscripts/${params?.id}`],
     enabled: !!params?.id,
   });
 
-  const { data: chunks = [], isLoading: isLoadingChunks } = useQuery<Array<{
-    id: number;
-    manuscriptId: number;
-    headingH1?: string;
-    headingH2?: string;
-    text: string;
-    imageUrl?: string;
-  }>>({
+  const { data: chunks = [], isLoading: isLoadingChunks } = useQuery({
     queryKey: [`/api/manuscripts/${params?.id}/chunks`],
     enabled: !!params?.id,
   });
 
-  // Get current chunk ID from URL
+  // Parse current chunk ID from URL
   const searchParams = new URLSearchParams(location.split('?')[1]);
-  const chunkIdParam = searchParams.get('chunk');
-  const currentChunkId = chunkIdParam ? parseInt(chunkIdParam) : null;
+  const currentChunkId = searchParams.get('chunk') 
+    ? parseInt(searchParams.get('chunk')!) 
+    : null;
 
-  // Set initial chunk if none specified
+  // Handle initial navigation
   useEffect(() => {
-    if (chunks.length > 0 && !chunkIdParam) {
+    if (!isLoadingChunks && chunks.length > 0 && !currentChunkId) {
       setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
     }
-  }, [chunks.length, chunkIdParam, params?.id]);
+  }, [chunks, currentChunkId, params?.id, isLoadingChunks]);
 
   if (isLoadingManuscript || isLoadingChunks) {
     return (
@@ -61,6 +50,10 @@ export function Reader() {
     ? chunks.find(chunk => chunk.id === currentChunkId)
     : chunks[0];
 
+  if (!currentChunk) {
+    return null;
+  }
+
   const isAuthor = user?.id === manuscript.authorId;
 
   const handleChunkChange = (chunkId: number) => {
@@ -68,10 +61,6 @@ export function Reader() {
       setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
     }
   };
-
-  if (!currentChunk) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen pb-24">

@@ -22,6 +22,9 @@ export function ChapterSelect({
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Chapter Select</DialogTitle>
+          <DialogDescription>
+            Select a chapter to navigate through the manuscript
+          </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[60vh] pr-4">
           <div className="space-y-2">
