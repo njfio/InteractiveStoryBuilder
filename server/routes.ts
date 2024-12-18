@@ -100,7 +100,14 @@ export function registerRoutes(app: Express): Server {
       },
       orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
     });
-    res.json(results);
+
+    // Add image URLs to the response
+    const chunksWithImages = results.map(chunk => ({
+      ...chunk,
+      imageUrl: chunk.images?.[0]?.localPath
+    }));
+
+    res.json(chunksWithImages);
   });
 
   // Image Generation
@@ -129,7 +136,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       console.log(`Generating image for chunk ${chunkId} with prompt: ${prompt}`);
-      
+
       const imageUrl = await generateImage(prompt || chunk.text);
 
       console.log('Creating image record in database');

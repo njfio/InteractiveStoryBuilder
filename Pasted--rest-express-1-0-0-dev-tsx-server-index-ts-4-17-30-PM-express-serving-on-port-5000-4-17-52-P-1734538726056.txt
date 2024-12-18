@@ -1,0 +1,38 @@
+
+> rest-express@1.0.0 dev
+> tsx server/index.ts
+
+4:17:30 PM [express] serving on port 5000
+4:17:52 PM [express] GET /api/manuscripts 304 in 448ms :: [{"id":1,"title":"sdfasdf","authorId":"160…
+4:17:53 PM [express] GET /api/manuscripts/1 304 in 230ms :: {"id":1,"title":"sdfasdf","authorId":"16…
+4:17:54 PM [express] GET /api/manuscripts/1/chunks 304 in 133ms :: [{"id":1,"manuscriptId":1,"chunkO…
+Generating image for chunk 1 with prompt: 
+Sending request to Replicate API for image generation...
+Initial API response: {
+  id: 'e7d83g670xrgc0ckva7vpc1740',
+  model: 'luma/photon',
+  version: 'dp-95e7eaa3abfc4b1982e7b3996ecec005',
+  input: {
+    aspect_ratio: '9:16',
+    prompt: 'On a clear night, you stand beneath a silent canopy of stars. Physics explains how these distant suns form from clouds of gas, fuse elements in their cores, and shine across unimaginable gulfs of space. This knowledge is astounding—an achievement of the human intellect that lets us predict stellar lifecycles and comprehend the universe’s grand scale. Yet as you stare upward, you may also feel a subtle ache for a deeper understanding: Why this cosmos? Why these patterns and not others? Science can tell us how matter behaves, but it doesn’t quite reveal whether there’s any underlying preference or meaning that guides the unfolding of it all.',
+    seed: 842071
+  },
+  logs: '',
+  output: 'https://replicate.delivery/czjl/o6GBgaTYrvqqKBI2HkaIj3EXLjFxGrFR3JKvvayjCcgvnCfJA/tmpmh4zvf1m.jpg',
+  data_removed: false,
+  error: null,
+  status: 'processing',
+  created_at: '2024-12-18T16:17:55.975Z',
+  urls: {
+    cancel: 'https://api.replicate.com/v1/predictions/e7d83g670xrgc0ckva7vpc1740/cancel',
+    get: 'https://api.replicate.com/v1/predictions/e7d83g670xrgc0ckva7vpc1740',
+    stream: 'https://stream.replicate.com/v1/files/fddq-cf2u4f546manaamknmfz5unkglyuwjaryfez4zlk6kemc3sjodrq'
+  }
+}
+Prediction status: succeeded
+Final image URL from API: https://replicate.delivery/czjl/o6GBgaTYrvqqKBI2HkaIj3EXLjFxGrFR3JKvvayjCcgvnCfJA/tmpmh4zvf1m.jpg
+Downloading image from: https://replicate.delivery/czjl/o6GBgaTYrvqqKBI2HkaIj3EXLjFxGrFR3JKvvayjCcgvnCfJA/tmpmh4zvf1m.jpg
+Image saved to: /home/runner/workspace/public/images/1734538687633-53oc1j.png
+Creating image record in database
+Image generated successfully: 3
+4:18:08 PM [express] POST /api/generate-image 200 in 12953ms :: {"id":3,"manuscriptId":1,"chunkId":1…
