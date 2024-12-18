@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Link } from "wouter";
 import { Home } from "@/pages/Home";
 import { Login } from "@/pages/Login";
 import { Dashboard } from "@/pages/Dashboard";
@@ -7,6 +7,8 @@ import { Gallery } from "@/pages/Gallery";
 import { ManuscriptGallery } from "@/pages/ManuscriptGallery";
 import { useEffect } from "react";
 import { initAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Images } from "lucide-react";
 
 function App() {
   useEffect(() => {
@@ -14,15 +16,37 @@ function App() {
   }, []);
 
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/login" component={Login} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/reader/:id" component={Reader} />
-      <Route path="/gallery" component={Gallery} />
-      <Route path="/manuscripts/:id/gallery" component={ManuscriptGallery} />
-      <Route component={NotFound} />
-    </Switch>
+    <div>
+      <nav className="border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <Link href="/dashboard">
+                <Button variant="ghost">Dashboard</Button>
+              </Link>
+              <Link href="/gallery">
+                <Button variant="ghost" className="gap-2">
+                  <Images className="h-4 w-4" />
+                  Image Gallery
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/login" component={Login} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/reader/:id" component={Reader} />
+          <Route path="/gallery" component={Gallery} />
+          <Route path="/manuscripts/:id/gallery" component={ManuscriptGallery} />
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+    </div>
   );
 }
 

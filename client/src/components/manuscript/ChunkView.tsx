@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageGenerator } from './ImageGenerator';
 import { ManuscriptImageSettings } from './ManuscriptImageSettings';
-import { Play, Share2, Settings2, Loader2 } from 'lucide-react';
+import { Play, Share2, Settings2, Loader2, Images } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -204,6 +205,11 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           <Button variant="outline" size="icon" onClick={shareChunk}>
             <Share2 />
           </Button>
+          <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
+            <Button variant="outline" size="icon">
+              <Images className="h-4 w-4" />
+            </Button>
+          </Link>
           {isAuthor && (
             <>
               <Button
