@@ -1,12 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-
-if (!process.env.REPLICATE_API_TOKEN) {
-  throw new Error('Missing REPLICATE_API_TOKEN environment variable');
-}
-
 import fs from 'fs/promises';
 import path from 'path';
-import { createClient } from '@supabase/supabase-js';
 
 if (!process.env.REPLICATE_API_TOKEN) {
   throw new Error('Missing REPLICATE_API_TOKEN environment variable');
@@ -47,15 +40,33 @@ export async function generateImage(prompt: string): Promise<string> {
     throw new Error(`Failed to generate image: ${error}`);
   }
 
-  const result = await response.json();
-  console.log('API response:', result);
+  const prediction = await response.json();
+  console.log('Initial API response:', prediction);
 
-  if (!result.output) {
-    throw new Error('No output from image generation');
+  // Wait for the prediction to complete
+  let result = prediction;
+  while (result.status === 'processing' || result.status === 'starting') {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+      },
+    });
+    
+    if (!pollResponse.ok) {
+      throw new Error('Failed to check prediction status');
+    }
+    
+    result = await pollResponse.json();
+    console.log('Prediction status:', result.status);
+  }
+
+  if (result.status === 'failed' || !result.output) {
+    throw new Error('Image generation failed: ' + (result.error || 'No output received'));
   }
 
   const imageUrl = result.output[0];
-  console.log('Image URL from API:', imageUrl);
+  console.log('Final image URL from API:', imageUrl);
 
   // Create images directory if it doesn't exist
   const imagesDir = path.join(process.cwd(), 'public', 'images');

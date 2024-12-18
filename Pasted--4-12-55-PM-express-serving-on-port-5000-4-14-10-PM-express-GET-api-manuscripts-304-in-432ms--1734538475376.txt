@@ -1,0 +1,49 @@
+
+4:12:55 PM [express] serving on port 5000
+4:14:10 PM [express] GET /api/manuscripts 304 in 432ms :: [{"id":1,"title":"sdfasdf","authorId":"160…
+4:14:11 PM [express] GET /api/manuscripts/1 304 in 228ms :: {"id":1,"title":"sdfasdf","authorId":"16…
+4:14:12 PM [express] GET /api/manuscripts/1/chunks 304 in 133ms :: [{"id":1,"manuscriptId":1,"chunkO…
+Generating image for chunk 1 with prompt: 
+Sending request to Replicate API for image generation...
+API response: {
+  id: 'jst7snv5d1rgc0ckva6a9ej35c',
+  model: 'luma/photon',
+  version: 'dp-95e7eaa3abfc4b1982e7b3996ecec005',
+  input: {
+    aspect_ratio: '9:16',
+    prompt: 'On a clear night, you stand beneath a silent canopy of stars. Physics explains how these distant suns form from clouds of gas, fuse elements in their cores, and shine across unimaginable gulfs of space. This knowledge is astounding—an achievement of the human intellect that lets us predict stellar lifecycles and comprehend the universe’s grand scale. Yet as you stare upward, you may also feel a subtle ache for a deeper understanding: Why this cosmos? Why these patterns and not others? Science can tell us how matter behaves, but it doesn’t quite reveal whether there’s any underlying preference or meaning that guides the unfolding of it all.',
+    seed: 120121
+  },
+  logs: '',
+  output: 'https://replicate.delivery/czjl/4DDJhpib1aoyDVSmzs1edhEbeB8qRWwfXpxXMVDxWde0tpwPB/tmp_mkttvoo.jpg',
+  data_removed: false,
+  error: null,
+  status: 'processing',
+  created_at: '2024-12-18T16:14:14.376Z',
+  urls: {
+    cancel: 'https://api.replicate.com/v1/predictions/jst7snv5d1rgc0ckva6a9ej35c/cancel',
+    get: 'https://api.replicate.com/v1/predictions/jst7snv5d1rgc0ckva6a9ej35c',
+    stream: 'https://stream.replicate.com/v1/files/fddq-scpy2ehoj3jfdx4rnfbzjyjv5oqkcjjsrgcsr3fpb2clmo3f23oq'
+  }
+}
+Image URL from API: h
+Downloading image from: h
+Error generating image: TypeError: Failed to parse URL from h
+    at node:internal/deps/undici/undici:13178:13
+    at downloadImage (/home/runner/workspace/server/utils/image.ts:17:20)
+    at generateImage (/home/runner/workspace/server/utils/image.ts:69:3)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:133:24) {
+  [cause]: TypeError: Invalid URL
+      at new URL (node:internal/url:797:36)
+      at new Request (node:internal/deps/undici/undici:9269:25)
+      at fetch (node:internal/deps/undici/undici:9998:25)
+      at fetch (node:internal/deps/undici/undici:13176:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:72:12)
+      at downloadImage (/home/runner/workspace/server/utils/image.ts:17:26)
+      at generateImage (/home/runner/workspace/server/utils/image.ts:69:9)
+      at <anonymous> (/home/runner/workspace/server/routes.ts:133:24) {
+    code: 'ERR_INVALID_URL',
+    input: 'h'
+  }
+}
+4:14:22 PM [express] POST /api/generate-image 500 in 8580ms :: {"message":"Failed to generate image"}
