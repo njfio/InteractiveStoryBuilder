@@ -17,27 +17,38 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
 export const initAuth = async () => {
   const { setUser, setLoading } = useAuthStore.getState();
+  console.log('Initializing auth...');
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('Initial session:', session);
+    setUser(session?.user ?? null);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user);
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   } catch (error) {
     console.error('Error initializing auth:', error);
   } finally {
     setLoading(false);
   }
-
-  supabase.auth.onAuthStateChange((_event, session) => {
-    setUser(session?.user ?? null);
-  });
 };
 
 export const signIn = async (email: string, password: string) => {
-  const { error } = await supabase.auth.signInWithPassword({
+  console.log('Attempting sign in for:', email);
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
-  if (error) throw error;
+  if (error) {
+    console.error('Sign in error:', error);
+    throw error;
+  }
+  console.log('Sign in successful:', data);
+  return data;
 };
 
 export const signUp = async (email: string, password: string) => {

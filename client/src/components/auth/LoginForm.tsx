@@ -18,6 +18,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -28,18 +29,25 @@ export function LoginForm() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('Form submitted:', values);
     setIsLoading(true);
     try {
       if (isSignUp) {
         await signUp(values.email, values.password);
         toast({
           title: 'Success',
-          description: 'Check your email to confirm your account',
+          description: 'Account created successfully',
         });
       } else {
         await signIn(values.email, values.password);
+        toast({
+          title: 'Success',
+          description: 'Logged in successfully',
+        });
+        setLocation('/dashboard');
       }
     } catch (error) {
+      console.error('Auth error:', error);
       toast({
         title: 'Error',
         description: (error as Error).message,
