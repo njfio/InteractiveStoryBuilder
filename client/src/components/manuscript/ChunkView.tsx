@@ -192,42 +192,28 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           </div>
         )}
 
-        <div className="flex items-center justify-start gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={playTTS}
-            disabled={isPlaying}
-          >
-            <Play className={isPlaying ? 'text-primary' : ''} />
-          </Button>
-          <Button variant="outline" size="icon" onClick={shareChunk}>
-            <Share2 />
-          </Button>
-          {isAuthor && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  generateImage.mutate({ 
-                    chunkId: chunk.id,
-                    prompt: chunk.text 
-                  });
-                }}
-                disabled={generateImage.isPending}
-              >
-                {generateImage.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  'Generate Image'
-                )}
+        <div className="mt-8 flex items-center justify-between border-t pt-4">
+          <div className="w-1/3 flex items-center gap-2">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="icon">
+                <Home className="h-4 w-4" />
               </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={playTTS}
+              disabled={isPlaying}
+            >
+              <Play className={isPlaying ? 'text-primary' : ''} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={shareChunk}>
+              <Share2 />
+            </Button>
+            {isAuthor && (
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="ghost" size="icon">
                     <Settings2 className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
@@ -259,19 +245,9 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
                   </div>
                 </DialogContent>
               </Dialog>
-            </>
-          )}
-        </div>
-
-        <div className="mt-8 flex items-center justify-between border-t pt-4">
-          <div className="w-24 flex justify-start">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="icon">
-                <Home className="h-4 w-4" />
-              </Button>
-            </Link>
+            )}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="w-1/3 flex items-center justify-center gap-4">
             <Button variant="outline" size="icon">
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -280,9 +256,31 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <div className="w-24 flex justify-end">
+          <div className="w-1/3 flex items-center justify-end gap-2">
+            {isAuthor && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  generateImage.mutate({ 
+                    chunkId: chunk.id,
+                    prompt: chunk.text 
+                  });
+                }}
+                disabled={generateImage.isPending}
+                size="sm"
+              >
+                {generateImage.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  'Generate Image'
+                )}
+              </Button>
+            )}
             <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
-              <Button variant="outline" size="icon">
+              <Button variant="ghost" size="icon">
                 <Images className="h-4 w-4" />
               </Button>
             </Link>
