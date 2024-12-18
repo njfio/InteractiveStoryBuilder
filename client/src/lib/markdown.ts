@@ -28,9 +28,9 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
         currentChunk = { order: ++chunkOrder };
       }
 
-      if (node.depth === 1) {
+      if (node.depth === 2) {
         currentChunk.headingH1 = getHeadingText(node);
-      } else if (node.depth === 2) {
+      } else if (node.depth === 3) {
         currentChunk.headingH2 = getHeadingText(node);
       }
     } else if (node.type === 'paragraph') {
