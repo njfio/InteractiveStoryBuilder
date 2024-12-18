@@ -27,6 +27,7 @@ export function Reader() {
   const [, params] = useRoute('/reader/:id');
   const [, setLocation] = useLocation();
   const { user } = useAuthStore();
+  const [activeChunk, setActiveChunk] = useState<Chunk | null>(null);
 
   // Query manuscript data
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<Manuscript>({
@@ -40,19 +41,25 @@ export function Reader() {
     enabled: !!params?.id,
   });
 
-  // Get current chunk ID from URL
-  const searchParams = new URLSearchParams(window.location.search);
-  const currentChunkId = searchParams.get('chunk') 
-    ? parseInt(searchParams.get('chunk')!)
-    : null;
-
-  // Set initial chunk if none specified
+  // Sync active chunk with URL
   useEffect(() => {
-    if (!isLoadingChunks && chunks.length > 0 && !currentChunkId) {
-      setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
-      window.scrollTo(0, 0);
+    const searchParams = new URLSearchParams(window.location.search);
+    const chunkId = searchParams.get('chunk');
+    
+    if (chunks.length > 0) {
+      if (chunkId) {
+        const parsedId = parseInt(chunkId);
+        const chunk = chunks.find(c => c.id === parsedId);
+        if (chunk && chunk !== activeChunk) {
+          setActiveChunk(chunk);
+        }
+      } else if (!activeChunk) {
+        // Set first chunk as default
+        setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
+        setActiveChunk(chunks[0]);
+      }
     }
-  }, [chunks, currentChunkId, params?.id, isLoadingChunks, setLocation]);
+  }, [chunks, params?.id, setLocation, activeChunk]);
 
   if (isLoadingManuscript || isLoadingChunks) {
     return (
@@ -67,18 +74,14 @@ export function Reader() {
     return null;
   }
 
-  const currentChunk = currentChunkId 
-    ? chunks.find(chunk => chunk.id === currentChunkId)
-    : chunks[0];
-
-  if (!currentChunk) {
-    return null;
-  }
-
+  // Use active chunk or default to first chunk
+  const currentChunk = activeChunk || chunks[0];
   const isAuthor = user?.id === manuscript.authorId;
 
   const handleChunkChange = (chunkId: number) => {
-    if (chunkId !== currentChunkId) {
+    const newChunk = chunks.find(c => c.id === chunkId);
+    if (newChunk && newChunk !== activeChunk) {
+      setActiveChunk(newChunk);
       setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
       window.scrollTo(0, 0);
     }
