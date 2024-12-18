@@ -40,25 +40,20 @@ export function Reader() {
     enabled: !!params?.id,
   });
 
-  // Effect to update URL when chunk changes
+  // Effect to handle initial load and URL changes
   useEffect(() => {
+    const searchParams = new URLSearchParams(location.split('?')[1]);
+    const chunkId = searchParams.get('chunk');
+    
     if (chunks.length > 0) {
-      const targetChunkId = currentChunkId || chunks[0]?.id;
-      if (targetChunkId && !chunkIdFromUrl) {
-        setLocation(`/reader/${params?.id}?chunk=${targetChunkId}`);
+      if (chunkId) {
+        setCurrentChunkId(parseInt(chunkId));
+      } else {
+        // If no chunk specified, use the first one
+        setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
       }
     }
-  }, [chunks, currentChunkId, params?.id]);
-
-  // Effect to handle URL chunk parameter changes
-  useEffect(() => {
-    if (chunkIdFromUrl) {
-      const parsedChunkId = parseInt(chunkIdFromUrl);
-      if (parsedChunkId !== currentChunkId) {
-        setCurrentChunkId(parsedChunkId);
-      }
-    }
-  }, [chunkIdFromUrl]);
+  }, [location, chunks, params?.id]);
 
   if (isLoadingManuscript || isLoadingChunks) {
     return (
