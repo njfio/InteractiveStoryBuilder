@@ -5,6 +5,7 @@ import { manuscripts, chunks, images, seoMetadata, users } from '@db/schema';
 import { requireAuth } from './middleware/auth';
 import { eq } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
+import { generateImage } from './utils/image';
 
 // Extend Express Request type to include user
 declare global {
@@ -129,20 +130,7 @@ export function registerRoutes(app: Express): Server {
 
       console.log(`Generating image for chunk ${chunkId} with prompt: ${prompt}`);
       
-      // TODO: Implement actual image generation with Replicate API
-      // For now, generate a colored SVG placeholder
-      const svgContent = `
-        <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#f0f0f0"/>
-          <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#666" text-anchor="middle">
-            Placeholder Image for: ${prompt || 'No prompt provided'}
-          </text>
-        </svg>
-      `;
-
-      // Create a base64 data URL for the SVG
-      const base64Svg = Buffer.from(svgContent).toString('base64');
-      const imageUrl = `data:image/svg+xml;base64,${base64Svg}`;
+      const imageUrl = await generateImage(prompt || chunk.text);
 
       console.log('Creating image record in database');
       const [image] = await db.insert(images).values({
