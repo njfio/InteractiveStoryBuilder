@@ -1,0 +1,39 @@
+Console.js:61 The above error occurred in the <LoginForm> component:
+
+    at LoginForm (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/auth/LoginForm.tsx:34:37)
+    at div
+    at Login
+    at Route (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=31d78316:323:16)
+    at Switch (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=31d78316:379:17)
+    at App (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/App.tsx:27:3)
+    at QueryClientProvider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=31d78316:2805:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+Mt.forEach.n.<computed> @ Console.js:61
+logCapturedError @ chunk-UPELNCPK.js?v=31d78316:14032
+update.callback @ chunk-UPELNCPK.js?v=31d78316:14052
+callCallback @ chunk-UPELNCPK.js?v=31d78316:11248
+commitUpdateQueue @ chunk-UPELNCPK.js?v=31d78316:11265
+commitLayoutEffectOnFiber @ chunk-UPELNCPK.js?v=31d78316:17093
+commitLayoutMountEffects_complete @ chunk-UPELNCPK.js?v=31d78316:17980
+commitLayoutEffects_begin @ chunk-UPELNCPK.js?v=31d78316:17969
+commitLayoutEffects @ chunk-UPELNCPK.js?v=31d78316:17920
+commitRootImpl @ chunk-UPELNCPK.js?v=31d78316:19353
+commitRoot @ chunk-UPELNCPK.js?v=31d78316:19277
+performSyncWorkOnRoot @ chunk-UPELNCPK.js?v=31d78316:18895
+flushSyncCallbacks @ chunk-UPELNCPK.js?v=31d78316:9119
+(anonymous) @ chunk-UPELNCPK.js?v=31d78316:18627
+Show 13 more frames
+Show less
+chunk-UPELNCPK.js?v=31d78316:9129 Uncaught ReferenceError: useLocation is not defined
+    at LoginForm (LoginForm.tsx:21:27)
+    at renderWithHooks (chunk-UPELNCPK.js?v=31d78316:11548:26)
+    at mountIndeterminateComponent (chunk-UPELNCPK.js?v=31d78316:14926:21)
+    at beginWork (chunk-UPELNCPK.js?v=31d78316:15914:22)
+    at beginWork$1 (chunk-UPELNCPK.js?v=31d78316:19753:22)
+    at performUnitOfWork (chunk-UPELNCPK.js?v=31d78316:19198:20)
+    at workLoopSync (chunk-UPELNCPK.js?v=31d78316:19137:13)
+    at renderRootSync (chunk-UPELNCPK.js?v=31d78316:19116:15)
+    at recoverFromConcurrentError (chunk-UPELNCPK.js?v=31d78316:18736:28)
+    at performSyncWorkOnRoot (chunk-UPELNCPK.js?v=31d78316:18879:28)
