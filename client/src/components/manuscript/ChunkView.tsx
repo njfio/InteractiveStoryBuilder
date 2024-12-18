@@ -70,16 +70,18 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
   const handlePreviousPage = () => {
     if (currentChunkIndex > 0) {
       const prevChunk = allChunks[currentChunkIndex - 1];
-      onChunkChange(prevChunk.id);
-      window.scrollTo(0, 0);
+      if (prevChunk) {
+        onChunkChange(prevChunk.id);
+      }
     }
   };
 
   const handleNextPage = () => {
     if (currentChunkIndex < allChunks.length - 1) {
       const nextChunk = allChunks[currentChunkIndex + 1];
-      onChunkChange(nextChunk.id);
-      window.scrollTo(0, 0);
+      if (nextChunk) {
+        onChunkChange(nextChunk.id);
+      }
     }
   };
 

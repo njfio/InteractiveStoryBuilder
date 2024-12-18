@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRoute, useLocation } from 'wouter';
 import { ChunkView } from '@/components/manuscript/ChunkView';
-import { Navigation } from '@/components/manuscript/Navigation';
 import { useAuthStore } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 
@@ -10,14 +9,6 @@ export function Reader() {
   const [, params] = useRoute('/reader/:id');
   const [location, setLocation] = useLocation();
   const { user } = useAuthStore();
-
-  // Get chunkId from URL query parameters
-  const searchParams = new URLSearchParams(location.split('?')[1]);
-  const chunkIdFromUrl = searchParams.get('chunk');
-  
-  const [currentChunkId, setCurrentChunkId] = useState<number | null>(
-    chunkIdFromUrl ? parseInt(chunkIdFromUrl) : null
-  );
 
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<{
     id: number;
@@ -31,6 +22,7 @@ export function Reader() {
 
   const { data: chunks = [], isLoading: isLoadingChunks } = useQuery<Array<{
     id: number;
+    manuscriptId: number;
     headingH1?: string;
     headingH2?: string;
     text: string;
@@ -40,20 +32,19 @@ export function Reader() {
     enabled: !!params?.id,
   });
 
-  // Effect to handle initial load and URL changes
+  // Get current chunk ID from URL
+  const searchParams = new URLSearchParams(location.split('?')[1]);
+  const currentChunkId = searchParams.get('chunk');
+  const currentChunk = currentChunkId 
+    ? chunks.find(chunk => chunk.id === parseInt(currentChunkId))
+    : chunks[0];
+
+  // Set initial chunk if none specified
   useEffect(() => {
-    const searchParams = new URLSearchParams(location.split('?')[1]);
-    const chunkId = searchParams.get('chunk');
-    
-    if (chunks.length > 0) {
-      if (chunkId) {
-        setCurrentChunkId(parseInt(chunkId));
-      } else {
-        // If no chunk specified, use the first one
-        setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
-      }
+    if (chunks.length > 0 && !currentChunkId) {
+      setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
     }
-  }, [location, chunks, params?.id]);
+  }, [chunks, currentChunkId, params?.id]);
 
   if (isLoadingManuscript || isLoadingChunks) {
     return (
@@ -63,19 +54,18 @@ export function Reader() {
     );
   }
 
-  if (!manuscript || !chunks) {
+  if (!manuscript || !chunks.length) {
     setLocation('/');
     return null;
   }
 
-  const currentChunk = chunks.find(
-    (chunk: any) => chunk.id === (currentChunkId || chunks[0]?.id)
-  );
-
   const isAuthor = user?.id === manuscript.authorId;
 
   const handleChunkChange = (chunkId: number) => {
-    setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
+    if (chunkId !== parseInt(currentChunkId || '0')) {
+      setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
+      window.scrollTo(0, 0);
+    }
   };
 
   return (
