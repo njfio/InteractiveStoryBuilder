@@ -159,36 +159,47 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           </Button>
           {isAuthor && (
             <>
-              <ImageGenerator 
-                key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
-                chunkId={chunk.id} 
-                manuscriptId={chunk.manuscriptId} 
-              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const dialogTrigger = document.getElementById(`settings-dialog-${chunk.id}`);
+                  if (dialogTrigger) dialogTrigger.click();
+                }}
+              >
+                Generate Image
+              </Button>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button id={`settings-dialog-${chunk.id}`} variant="outline" size="icon">
                     <Settings2 className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Image Generation Settings</DialogTitle>
+                    <DialogTitle>Image Generation</DialogTitle>
                     <DialogDescription>
-                      Configure image generation parameters for this manuscript
+                      Generate and configure images for this section
                     </DialogDescription>
                   </DialogHeader>
-                  <ManuscriptImageSettings 
-                    manuscriptId={chunk.manuscriptId} 
-                    currentSettings={chunk.manuscript?.imageSettings || {
-                      seed: 469,
-                      prompt: "",
-                      aspect_ratio: "9:16",
-                      image_reference_url: null,
-                      style_reference_url: null,
-                      image_reference_weight: 0.85,
-                      style_reference_weight: 0.85
-                    }} 
-                  />
+                  <div className="space-y-6">
+                    <ImageGenerator 
+                      key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
+                      chunkId={chunk.id} 
+                      manuscriptId={chunk.manuscriptId} 
+                    />
+                    <ManuscriptImageSettings 
+                      manuscriptId={chunk.manuscriptId} 
+                      currentSettings={chunk.manuscript?.imageSettings || {
+                        seed: 469,
+                        prompt: "",
+                        aspect_ratio: "9:16",
+                        image_reference_url: null,
+                        style_reference_url: null,
+                        image_reference_weight: 0.85,
+                        style_reference_weight: 0.85
+                      }} 
+                    />
+                  </div>
                 </DialogContent>
               </Dialog>
             </>
