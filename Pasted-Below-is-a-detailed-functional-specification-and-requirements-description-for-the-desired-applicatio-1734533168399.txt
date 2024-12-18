@@ -1,0 +1,212 @@
+Below is a detailed functional specification and requirements description for the desired application. This text is intended as input to a language model that will generate code or project scaffolding. The application should follow a functional programming paradigm, adhere to the given functional programming principles, and incorporate extensive logging, thorough documentation, and unit testing throughout.
+
+Application Overview
+
+This application is designed to help authors share their novels online by transforming a manuscript written in Markdown into a rich, media-enhanced reading experience. Users can upload a Markdown manuscript, which the system will then parse and segment into structured chunks. Each chunk will be represented as a page containing text and a generated image. The images will be produced by invoking an image-generation API (Replicate’s luma/photon model by default) based on the chunk text. Additionally, the application will offer text-to-speech (TTS) features via Gemini’s real-time API, allowing readers to listen to the content. Authors will be able to manage manuscripts, images, and SEO settings behind secure login, while the reading content will be publicly accessible and shareable.
+
+Key Features
+
+	1.	Manuscript Upload and Processing
+	•	Users (authenticated) can upload a Markdown file of their manuscript.
+	•	The system will parse the Markdown to:
+	•	Identify H1 and H2 headers as structural divisions (e.g., chapters and sections).
+	•	Break down each chapter/section into individual paragraph-level chunks.
+	•	Each chunk, along with its associated heading structure, will be stored in a Supabase database.
+	•	Only authenticated users can create, update, or delete manuscripts.
+	2.	Chunking and Navigation
+	•	Each chunk corresponds to one “page” of the manuscript.
+	•	Readers can navigate from one chunk/page to the next and previous, and jump between chapters using a minimal, intuitive UI.
+	•	Each chunk/page is accessible via a unique URL and can be easily shared.
+	3.	Image Generation for Chunks
+	•	For each chunk of text, the system can generate an image using Replicate’s luma/photon model.
+	•	A prompt template is used for image generation. Authors have control over the prompt parameters using an editor interface (the “image prompt editor”), which interacts with Gemini to ensure flexible parameter setting.
+	•	Images are generated on-demand via a button on each chunk page. If an image already exists, it is deleted before a new one is generated.
+	•	Authors can bulk-generate images for all chunks in a manuscript, as well as bulk-regenerate them.
+	•	Generated images will be downloaded from Replicate’s results and stored locally on the server or in a storage bucket via Supabase.
+	•	Images can be individually managed (CRUD operations) by authenticated users.
+	4.	Image Management and Galleries
+	•	A gallery view for all images associated with a single manuscript.
+	•	A global gallery view showing images from all manuscripts.
+	•	Users can delete and regenerate images from these galleries (behind secure login).
+	5.	Text-to-Speech (TTS) Integration
+	•	Integrate with Gemini’s real-time TTS API to provide spoken versions of each chunk’s text.
+	•	The generated audio can be streamed or downloaded.
+	•	TTS is triggered per chunk, allowing readers to listen to pages individually.
+	6.	SEO and Sharing
+	•	Each manuscript and each chunk page should have SEO meta tags, titles, and descriptions.
+	•	SEO should be generated and managed by AI (e.g., integrated LLM calls) and stored in the database (CRUD operations for SEO under secure login).
+	•	The manuscript-level SEO settings should serve as a template for chunk-level SEO.
+	•	Each chunk’s URL should be sharable, with good SEO for public discovery.
+	7.	Exporting
+	•	The entire manuscript, along with images, can be exported as:
+	•	A PDF document (with images inlined).
+	•	A Markdown file containing all text and references to images.
+	•	This allows authors to produce print-ready or portable versions of their work.
+	8.	Security and Access Control
+	•	Manuscript upload, editing, image generation, and SEO configuration are all protected behind secure login.
+	•	Manuscripts, chunks, and images are publicly viewable without authentication.
+	•	Supabase will be used as the backend with authentication/authorization.
+	•	Public pages (readers) see only the text and images with minimal controls.
+	•	Authors see additional controls (image regeneration, prompt editing, SEO editing) after logging in.
+	9.	Functional Programming Principles
+	•	Implement the application in a functional programming style:
+	•	Pure Functions: Core data processing (e.g., Markdown parsing, SEO content generation, image prompt formatting) should be done using pure functions that return the same output given the same input, with no side effects.
+	•	Immutability: All data transformations should produce new data structures rather than modify existing ones.
+	•	First-Class and Higher-Order Functions: Functions should be composable, and functional abstractions used where possible.
+	•	Declarative Programming: Focus on what data transformations need to happen rather than imperative step-by-step instructions.
+	•	Recursion Over Loops: Prefer recursion or higher-order array methods (map, filter, reduce) over traditional loops when possible.
+	•	Avoid Side Effects: Side-effecting operations (database writes, API calls) should be isolated and managed through well-defined interfaces.
+	•	Referential Transparency: Functions that generate prompts, parse Markdown, and produce SEO metadata should be referentially transparent.
+	10.	Extensive Logging, Documentation, and Testing
+	•	Every function and module should have thorough documentation comments.
+	•	Comprehensive logs should be present, including timing, error handling, and success messages for major steps (e.g., image generation requests, SEO generation, file exports).
+	•	Unit tests for all pure functions and key modules (Markdown parsing, SEO generation, prompt creation) should be provided.
+	•	Logging should avoid leaking sensitive information (API keys, user data).
+
+Entities and Data Models (Stored in Supabase)
+
+	1.	Manuscript
+	•	id
+	•	title
+	•	author_id (from authenticated user)
+	•	original_markdown
+	•	created_at
+	•	updated_at
+	2.	Chunk
+	•	id
+	•	manuscript_id
+	•	chunk_order (order in the manuscript)
+	•	heading_h1 (chapter name)
+	•	heading_h2 (section name, if applicable)
+	•	text (the chunk’s text)
+	•	image_id (FK to Images)
+	•	created_at
+	•	updated_at
+	3.	Image
+	•	id
+	•	manuscript_id
+	•	chunk_id
+	•	local_path (where it’s stored)
+	•	prompt_params (JSON with parameters used for generation)
+	•	created_at
+	•	updated_at
+	4.	SEO
+	•	id
+	•	manuscript_id
+	•	chunk_id (nullable, for manuscript-level or chunk-level)
+	•	title
+	•	description
+	•	keywords (array)
+	•	generated_by_ai (boolean)
+	•	created_at
+	•	updated_at
+	5.	User
+	•	Managed by Supabase auth, not necessarily a separate table definition here.
+
+Core Functional Requirements
+
+	1.	Upload Manuscript (Authenticated)
+	•	Input: Markdown file.
+	•	Process: Parse headers (H1, H2), create chunks.
+	•	Store: Manuscript and chunks in database.
+	•	Return: Manuscript ID and structured data.
+	2.	Generate Image for a Chunk (Authenticated)
+	•	Input: Chunk text and optional prompt parameters.
+	•	Process: Send request to Replicate API (luma/photon), wait for completion.
+	•	Store: Download result image, store locally. Update image_id in chunk.
+	•	Return: Image data.
+	3.	Bulk Generate/Re-generate Images (Authenticated)
+	•	Input: Manuscript ID.
+	•	Process: Iterate over all chunks, generating images for those missing images or regenerating existing ones.
+	4.	View Manuscript (Public)
+	•	Show navigation by chapters (H1), sections (H2).
+	•	Show chunks one-per-page, with image and text, plus TTS option and shareable URL.
+	5.	Gallery Views (Public)
+	•	Per-manuscript gallery: Show all images belonging to one manuscript.
+	•	Global gallery: Show images from all manuscripts.
+	6.	SEO Generation (Authenticated)
+	•	Input: Manuscript or chunk ID.
+	•	Process: Use AI to generate or update SEO metadata.
+	•	Store: In SEO table.
+	7.	Export
+	•	PDF export: Combine chunks and images into a single PDF.
+	•	Markdown export: Original or processed markdown plus references to images.
+	8.	Text-to-Speech
+	•	Input: Chunk text.
+	•	Process: Send to Gemini TTS API, return audio stream or file.
+	•	Show a play or download button on chunk pages.
+
+Integration Examples
+
+	•	Replicate API (Image Generation):
+
+curl -s -X POST \
+  -H "Authorization: Bearer $REPLICATE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: wait" \
+  -d '{
+    "input": {
+      "seed": 469,
+      "prompt": "Your generated prompt here",
+      "aspect_ratio": "3:4",
+      "image_reference_url": "https://example.com/reference.jpg",
+      "style_reference_url": "https://example.com/style.jpg",
+      "image_reference_weight": 0.85,
+      "style_reference_weight": 0.85,
+      "character_reference_url": "https://example.com/character.jpg"
+    }
+  }' \
+  https://api.replicate.com/v1/models/luma/photon/predictions
+
+
+	•	OpenAI TTS API:
+
+curl https://api.openai.com/v1/audio/speech \
+-H "Authorization: Bearer $OPENAI_API_KEY" \
+-H "Content-Type: application/json" \
+-d '{
+  "model": "tts-1",
+  "input": "Text for this chunk",
+  "voice": "alloy"
+}' \
+--output speech.mp3
+
+Functional Programming Guidelines
+
+	•	Pure Functions:
+Create pure functions for:
+	•	Markdown parsing (input: markdown text, output: structured data).
+	•	SEO generation (input: text/chunk data, output: title/description/keywords).
+	•	Prompt generation (input: chunk text + parameters, output: prompt object).
+	•	Immutability:
+Use immutable data structures or immutable transformations (e.g., array map, filter, reduce without mutation).
+	•	Higher-Order Functions:
+Utilize functions that take other functions as arguments for tasks like bulk image generation (map over chunks with a generateImage function).
+	•	Declarative Programming:
+Declare what transformations should happen on the data rather than explicitly iterating and mutating states.
+	•	Recursion Over Loops:
+Where iteration is required, consider recursion or functional helpers instead of traditional for loops.
+	•	Avoid Side Effects:
+Side effects (like API calls, database writes) should be isolated at the application “edges.” Core domain logic remains pure and testable.
+	•	Referential Transparency:
+Ensure that calling any pure function with the same inputs always yields the same outputs.
+
+Non-Functional Requirements
+
+	•	Extensive Logging:
+Every major action (manuscript upload, chunk generation, image generation, SEO generation) should be logged. Use structured logging with timestamps and correlation IDs where possible.
+	•	Documentation:
+Each function and module should have docstrings explaining the purpose, inputs, and outputs.
+Include a high-level architectural overview and a readme detailing setup steps.
+	•	Unit Tests:
+Write unit tests for:
+	•	Markdown parsing
+	•	SEO generation
+	•	Prompt generation
+	•	Image processing logic (excluding the actual API call)
+	•	Data model functions
+Tests should be deterministic, isolated, and cover a variety of input cases.
+
+Conclusion
+
+The resulting application is a functional, image-rich, and SEO-optimized reading platform for novels. By adhering to functional programming principles, logging extensively, providing documentation, and ensuring thorough test coverage, the codebase will be maintainable, transparent, and robust. The application’s secure backend (Supabase), integrated external APIs (Replicate for images, Gemini for TTS), and public-facing manuscript pages will together provide a seamless authoring and reading experience.
