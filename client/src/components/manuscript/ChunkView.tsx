@@ -156,7 +156,7 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
   };
 
   return (
-    <Card className="max-w-4xl mx-auto mb-20">
+    <Card className="max-w-4xl mx-auto mb-24">
       <CardHeader>
         {chunk.headingH1 && (
           <CardTitle className="text-3xl font-bold">{chunk.headingH1}</CardTitle>
@@ -192,98 +192,100 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           </div>
         )}
 
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t py-4 px-6 flex items-center justify-between">
-          <div className="w-1/3 flex items-center gap-2">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="icon">
-                <Home className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={playTTS}
-              disabled={isPlaying}
-            >
-              <Play className={isPlaying ? 'text-primary' : ''} />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={shareChunk}>
-              <Share2 />
-            </Button>
-            {isAuthor && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Settings2 className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Image Generation</DialogTitle>
-                    <DialogDescription>
-                      Generate and configure images for this section
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-6">
-                    <ImageGenerator 
-                      key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
-                      chunkId={chunk.id} 
-                      manuscriptId={chunk.manuscriptId} 
-                    />
-                    <ManuscriptImageSettings 
-                      manuscriptId={chunk.manuscriptId} 
-                      currentSettings={chunk.manuscript?.imageSettings || {
-                        seed: 469,
-                        prompt: "",
-                        aspect_ratio: "9:16",
-                        image_reference_url: null,
-                        style_reference_url: null,
-                        image_reference_weight: 0.85,
-                        style_reference_weight: 0.85
-                      }} 
-                    />
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-          <div className="w-1/3 flex items-center justify-center gap-4">
-            <Button variant="outline" size="icon">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground">Page 1 of 10</span>
-            <Button variant="outline" size="icon">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="w-1/3 flex items-center justify-end gap-2">
-            {isAuthor && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg py-4 px-6 z-50">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="w-1/3 flex items-center gap-2">
+              <Link href="/dashboard">
+                <Button variant="ghost" size="icon">
+                  <Home className="h-4 w-4" />
+                </Button>
+              </Link>
               <Button
                 variant="ghost"
-                onClick={() => {
-                  generateImage.mutate({ 
-                    chunkId: chunk.id,
-                    prompt: chunk.text 
-                  });
-                }}
-                disabled={generateImage.isPending}
-                size="sm"
+                size="icon"
+                onClick={playTTS}
+                disabled={isPlaying}
               >
-                {generateImage.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  'Generate Image'
-                )}
+                <Play className={isPlaying ? 'text-primary' : ''} />
               </Button>
-            )}
-            <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
-              <Button variant="ghost" size="icon">
-                <Images className="h-4 w-4" />
+              <Button variant="ghost" size="icon" onClick={shareChunk}>
+                <Share2 />
               </Button>
-            </Link>
+              {isAuthor && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Settings2 className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Image Generation</DialogTitle>
+                      <DialogDescription>
+                        Generate and configure images for this section
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                      <ImageGenerator 
+                        key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
+                        chunkId={chunk.id} 
+                        manuscriptId={chunk.manuscriptId} 
+                      />
+                      <ManuscriptImageSettings 
+                        manuscriptId={chunk.manuscriptId} 
+                        currentSettings={chunk.manuscript?.imageSettings || {
+                          seed: 469,
+                          prompt: "",
+                          aspect_ratio: "9:16",
+                          image_reference_url: null,
+                          style_reference_url: null,
+                          image_reference_weight: 0.85,
+                          style_reference_weight: 0.85
+                        }} 
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+            <div className="w-1/3 flex items-center justify-center gap-4">
+              <Button variant="outline" size="icon">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground">Page 1 of 10</span>
+              <Button variant="outline" size="icon">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="w-1/3 flex items-center justify-end gap-2">
+              {isAuthor && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    generateImage.mutate({ 
+                      chunkId: chunk.id,
+                      prompt: chunk.text 
+                    });
+                  }}
+                  disabled={generateImage.isPending}
+                  size="sm"
+                >
+                  {generateImage.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate Image'
+                  )}
+                </Button>
+              )}
+              <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
+                <Button variant="ghost" size="icon">
+                  <Images className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </CardContent>
