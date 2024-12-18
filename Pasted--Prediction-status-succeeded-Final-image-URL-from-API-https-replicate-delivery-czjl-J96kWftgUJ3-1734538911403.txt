@@ -1,0 +1,38 @@
+}
+Prediction status: succeeded
+Final image URL from API: https://replicate.delivery/czjl/J96kWftgUJ3pASefF3MuGBFsqYKrxODfnk1QibDwyY3oGqwPB/tmp48903dlg.jpg
+Downloading image from: https://replicate.delivery/czjl/J96kWftgUJ3pASefF3MuGBFsqYKrxODfnk1QibDwyY3oGqwPB/tmp48903dlg.jpg
+Image saved to: /home/runner/workspace/public/images/1734538859888-xbn1fr.png
+Creating image record in database
+Image generated successfully: 4
+4:21:00 PM [express] POST /api/generate-image 200 in 16711ms :: {"id":4,"manuscriptId":1,"chunkId":1…
+Generating image for chunk 1 with prompt: 
+Sending request to Replicate API for image generation...
+Initial API response: {
+  id: '5h4ptczj25rga0ckva9ay1mgrc',
+  model: 'luma/photon',
+  version: 'dp-95e7eaa3abfc4b1982e7b3996ecec005',
+  input: {
+    aspect_ratio: '9:16',
+    prompt: 'On a clear night, you stand beneath a silent canopy of stars. Physics explains how these distant suns form from clouds of gas, fuse elements in their cores, and shine across unimaginable gulfs of space. This knowledge is astounding—an achievement of the human intellect that lets us predict stellar lifecycles and comprehend the universe’s grand scale. Yet as you stare upward, you may also feel a subtle ache for a deeper understanding: Why this cosmos? Why these patterns and not others? Science can tell us how matter behaves, but it doesn’t quite reveal whether there’s any underlying preference or meaning that guides the unfolding of it all.',
+    seed: 543657
+  },
+  logs: '',
+  output: 'https://replicate.delivery/czjl/KHfSoORJP9wGAqs9WxvIkrv4f9oPVmhlvZJFXsaaz2kLiK8TA/tmpff5k3qrk.jpg',
+  data_removed: false,
+  error: null,
+  status: 'processing',
+  created_at: '2024-12-18T16:21:23.601Z',
+  urls: {
+    cancel: 'https://api.replicate.com/v1/predictions/5h4ptczj25rga0ckva9ay1mgrc/cancel',
+    get: 'https://api.replicate.com/v1/predictions/5h4ptczj25rga0ckva9ay1mgrc',
+    stream: 'https://stream.replicate.com/v1/files/fddq-3kkajo56rcybvsluj4fldpdob5ighhgmxiddznchhqt4nf3udmdq'
+  }
+}
+Prediction status: succeeded
+Final image URL from API: https://replicate.delivery/czjl/KHfSoORJP9wGAqs9WxvIkrv4f9oPVmhlvZJFXsaaz2kLiK8TA/tmpff5k3qrk.jpg
+Downloading image from: https://replicate.delivery/czjl/KHfSoORJP9wGAqs9WxvIkrv4f9oPVmhlvZJFXsaaz2kLiK8TA/tmpff5k3qrk.jpg
+Image saved to: /home/runner/workspace/public/images/1734538892377-0wpeha.png
+Creating image record in database
+Image generated successfully: 5
+4:21:32 PM [express] POST /api/generate-image 200 in 9950ms :: {"id":5,"manuscriptId":1,"chunkId":1,…

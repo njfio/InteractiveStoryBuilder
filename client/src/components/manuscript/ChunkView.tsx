@@ -87,14 +87,22 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
         </div>
 
         {chunk.imageUrl && (
-          <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-muted">
+          <div className="relative w-full aspect-[9/16] rounded-lg overflow-hidden bg-muted">
             <img
-              src={chunk.imageUrl}
+              src={window.location.origin + chunk.imageUrl}
               alt="Generated illustration"
               className="object-contain w-full h-full"
               onError={(e) => {
                 console.error('Error loading image:', e);
-                e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXJyb3IgbG9hZGluZyBpbWFnZTwvdGV4dD48L3N2Zz4=';
+                const fallbackSVG = `
+                  <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100%" height="100%" fill="#f0f0f0"/>
+                    <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#666" text-anchor="middle">
+                      Image loading failed
+                    </text>
+                  </svg>
+                `;
+                e.currentTarget.src = `data:image/svg+xml;base64,${btoa(fallbackSVG)}`;
               }}
             />
           </div>
