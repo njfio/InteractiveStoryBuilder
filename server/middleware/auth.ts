@@ -29,7 +29,10 @@ export async function requireAuth(
       throw error || new Error('User not found');
     }
 
-    req.user = user;
+    req.user = {
+      id: user.id,
+      email: user.email || ''
+    };
     next();
   } catch (error) {
     console.error('Auth error:', error);

@@ -1,7 +1,7 @@
 import type { Express, Request } from 'express';
 import { createServer, type Server } from 'http';
 import { db } from '@db';
-import { manuscripts, chunks, images, seoMetadata } from '@db/schema';
+import { manuscripts, chunks, images, seoMetadata, users } from '@db/schema';
 import { requireAuth } from './middleware/auth';
 import { eq } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
