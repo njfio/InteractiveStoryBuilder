@@ -15,6 +15,7 @@ interface ImageGeneratorProps {
 export function ImageGenerator({ chunkId, manuscriptId }: ImageGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [prompt, setPrompt] = useState('');
+  const [characterReferenceUrl, setCharacterReferenceUrl] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -28,7 +29,7 @@ export function ImageGenerator({ chunkId, manuscriptId }: ImageGeneratorProps) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`
         },
-        body: JSON.stringify({ chunkId, prompt }),
+        body: JSON.stringify({ chunkId, prompt, characterReferenceUrl }),
       });
 
       if (!response.ok) {
@@ -57,12 +58,21 @@ export function ImageGenerator({ chunkId, manuscriptId }: ImageGeneratorProps) {
     <Card>
       <CardContent className="pt-6">
         <div className="flex gap-2">
-          <Input
-            placeholder="Custom prompt for image generation..."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            disabled={isGenerating}
-          />
+          <div className="space-y-2">
+            <Input
+              placeholder="Custom prompt for image generation..."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              disabled={isGenerating}
+            />
+            <Input
+              placeholder="Character reference URL (optional)"
+              value={characterReferenceUrl}
+              onChange={(e) => setCharacterReferenceUrl(e.target.value)}
+              disabled={isGenerating}
+              type="url"
+            />
+          </div>
           <Button
             onClick={generateImage}
             disabled={isGenerating}

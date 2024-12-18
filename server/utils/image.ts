@@ -15,7 +15,17 @@ async function downloadImage(url: string, localPath: string): Promise<void> {
   console.log('Image saved to:', localPath);
 }
 
-export async function generateImage(prompt: string): Promise<string> {
+interface ImageSettings {
+  seed?: number;
+  prompt?: string;
+  aspect_ratio?: string;
+  image_reference_url?: string | null;
+  style_reference_url?: string | null;
+  image_reference_weight?: number;
+  style_reference_weight?: number;
+}
+
+export async function generateImage(prompt: string, manuscriptSettings: ImageSettings = {}, characterReferenceUrl?: string): Promise<string> {
   console.log('Sending request to Replicate API for image generation...');
   
   const response = await fetch('https://api.replicate.com/v1/models/luma/photon/predictions', {
@@ -27,9 +37,14 @@ export async function generateImage(prompt: string): Promise<string> {
     },
     body: JSON.stringify({
       input: {
-        prompt,
-        seed: Math.floor(Math.random() * 1000000),
-        aspect_ratio: "9:16"
+        prompt: manuscriptSettings.prompt ? `${manuscriptSettings.prompt} ${prompt}` : prompt,
+        seed: manuscriptSettings.seed || Math.floor(Math.random() * 1000000),
+        aspect_ratio: manuscriptSettings.aspect_ratio || "9:16",
+        image_reference: manuscriptSettings.image_reference_url || undefined,
+        style_reference: manuscriptSettings.style_reference_url || undefined,
+        image_reference_weight: manuscriptSettings.image_reference_weight || undefined,
+        style_reference_weight: manuscriptSettings.style_reference_weight || undefined,
+        character_reference: characterReferenceUrl || undefined
       }
     }),
   });

@@ -97,6 +97,7 @@ export function registerRoutes(app: Express): Server {
       where: eq(chunks.manuscriptId, parseInt(req.params.id)),
       with: {
         images: true,
+        manuscript: true,
       },
       orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
     });
@@ -108,6 +109,36 @@ export function registerRoutes(app: Express): Server {
     }));
 
     res.json(chunksWithImages);
+  });
+
+  // Manuscript Settings
+  app.put('/api/manuscripts/:id/settings', requireAuth, async (req, res) => {
+    const { imageSettings } = req.body;
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const manuscript = await db.query.manuscripts.findFirst({
+      where: eq(manuscripts.id, parseInt(req.params.id)),
+    });
+
+    if (!manuscript) {
+      return res.status(404).json({ message: 'Manuscript not found' });
+    }
+
+    if (manuscript.authorId !== user.id) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const [updated] = await db
+      .update(manuscripts)
+      .set({ imageSettings, updatedAt: new Date().toISOString() })
+      .where(eq(manuscripts.id, manuscript.id))
+      .returning();
+
+    res.json(updated);
   });
 
   // Image Generation
@@ -140,7 +171,15 @@ export function registerRoutes(app: Express): Server {
       // Delete any existing images for this chunk
       await db.delete(images).where(eq(images.chunkId, chunkId));
 
-      const imageUrl = await generateImage(prompt || chunk.text);
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, chunk.manuscriptId),
+      });
+
+      const imageUrl = await generateImage(
+        prompt || chunk.text,
+        manuscript?.imageSettings as any || {},
+        req.body.characterReferenceUrl
+      );
 
       console.log('Creating image record in database');
       const [image] = await db.insert(images).values({

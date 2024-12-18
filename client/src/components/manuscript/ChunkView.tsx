@@ -109,7 +109,23 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           </div>
         )}
 
-        {isAuthor && <ImageGenerator chunkId={chunk.id} manuscriptId={chunk.manuscriptId} />}
+        {isAuthor && (
+  <>
+    <ManuscriptImageSettings 
+      manuscriptId={chunk.manuscriptId} 
+      currentSettings={chunk.manuscript?.imageSettings || {
+        seed: 469,
+        prompt: "",
+        aspect_ratio: "9:16",
+        image_reference_url: null,
+        style_reference_url: null,
+        image_reference_weight: 0.85,
+        style_reference_weight: 0.85
+      }} 
+    />
+    <ImageGenerator chunkId={chunk.id} manuscriptId={chunk.manuscriptId} />
+  </>
+)}
 
         <div className="flex gap-2">
           <Button
