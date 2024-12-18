@@ -165,7 +165,11 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
                   try {
                     const response = await fetch('/api/generate-image', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                      },
+                      credentials: 'include',
                       body: JSON.stringify({ 
                         chunkId: chunk.id,
                         prompt: chunk.text 
@@ -173,15 +177,24 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
                     });
                     
                     if (!response.ok) {
-                      throw new Error('Failed to generate image');
+                      if (response.status === 401) {
+                        throw new Error('Please sign in to generate images');
+                      }
+                      const error = await response.json();
+                      throw new Error(error.message || 'Failed to generate image');
                     }
+                    
+                    toast({
+                      title: 'Success',
+                      description: 'Image generated successfully',
+                    });
                     
                     // Refresh the page to show new image
                     window.location.reload();
                   } catch (error) {
                     toast({
                       title: 'Error',
-                      description: 'Failed to generate image',
+                      description: (error as Error).message || 'Failed to generate image',
                       variant: 'destructive',
                     });
                   }

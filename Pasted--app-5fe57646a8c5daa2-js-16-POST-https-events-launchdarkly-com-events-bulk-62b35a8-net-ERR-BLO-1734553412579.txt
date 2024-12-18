@@ -1,0 +1,58 @@
+_app-5fe57646a8c5daa2.js:16 
+ POST https://events.launchdarkly.com/events/bulk/62b35a8… net::ERR_BLOCKED_BY_CLIENT
+_app-5fe57646a8c5daa2.js:16 
+ POST https://events.launchdarkly.com/events/bulk/62b35a8… net::ERR_BLOCKED_BY_CLIENT
+Console.js:61 Warning: `value` prop on `input` should not be null. Consider using an empty string to clear the component or `undefined` for uncontrolled components.
+    at input
+    at _c (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/input.tsx:20:11)
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-5HD3E6E6.js?v=fb9a0e3c:52:11
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-5HD3E6E6.js?v=fb9a0e3c:33:11
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/form.tsx:127:9
+    at div
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/form.tsx:71:6
+    at Controller (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…nner/workspace/node_modules/.vite/deps/chunk-EV5STJTR.js?v=fb9a0e3c:313:35)
+    at FormField (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/form.tsx:32:6)
+    at form
+    at FormProvider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…nner/workspace/node_modules/.vite/deps/chunk-EV5STJTR.js?v=fb9a0e3c:102:11)
+    at div
+    at _c9 (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:106:12)
+    at div
+    at _c (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:20:11)
+    at ManuscriptImageSettings (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/manuscript/ManuscriptImageSettings.tsx:46:43)
+    at div
+    at div
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-3IG6TB7G.js?v=fb9a0e3c:41:13
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-RT7YJXFD.js?v=fb9a0e3c:102:7
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-5HD3E6E6.js?v=fb9a0e3c:52:11
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-5HD3E6E6.js?v=fb9a0e3c:33:11
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-3IG6TB7G.js?v=fb9a0e3c:41:13
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…orkspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=fb9a0e3c:57:5
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…space/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=fb9a0e3c:1315:13
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…space/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=fb9a0e3c:1238:58
+    at Presence (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…nner/workspace/node_modules/.vite/deps/chunk-GCSUTOPT.js?v=fb9a0e3c:131:11)
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…space/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=fb9a0e3c:1229:64
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-5HD3E6E6.js?v=fb9a0e3c:52:11
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-5HD3E6E6.js?v=fb9a0e3c:33:11
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-3IG6TB7G.js?v=fb9a0e3c:41:13
+    at https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…nner/workspace/node_modules/.vite/deps/chunk-RT7YJXFD.js?v=fb9a0e3c:301:22
+    at Presence (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…nner/workspace/node_modules/.vite/deps/chunk-GCSUTOPT.js?v=fb9a0e3c:131:11)
+    at Provider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-GCSUTOPT.js?v=fb9a0e3c:51:15)
+    at DialogPortal (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…space/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=fb9a0e3c:1192:11)
+    at _c3 (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/dialog.tsx:49:12)
+    at Provider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…unner/workspace/node_modules/.vite/deps/chunk-GCSUTOPT.js?v=fb9a0e3c:51:15)
+    at Dialog (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…kspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=fb9a0e3c:1133:5)
+    at div
+    at div
+    at _c9 (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:106:12)
+    at div
+    at _c (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/ui/card.tsx:20:11)
+    at ChunkView (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/manuscript/ChunkView.tsx:33:29)
+    at div
+    at div
+    at Reader (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/pages/Reader.tsx:27:22)
+    at Route (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fb9a0e3c:323:16)
+    at Switch (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fb9a0e3c:379:17)
+    at App (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/App.tsx:27:3)
+    at QueryClientProvider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=fb9a0e3c:2796:3)
+ChunkView.tsx:166 
+ POST https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/api/generate-image 401 (Unauthorized)
