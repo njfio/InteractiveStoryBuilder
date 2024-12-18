@@ -17,24 +17,6 @@ function App() {
 
   return (
     <div>
-      <nav className="border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <Link href="/dashboard">
-                <Button variant="ghost">Dashboard</Button>
-              </Link>
-              <Link href="/gallery">
-                <Button variant="ghost" className="gap-2">
-                  <Images className="h-4 w-4" />
-                  Image Gallery
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Switch>
           <Route path="/" component={Home} />

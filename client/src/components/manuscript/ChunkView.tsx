@@ -156,7 +156,7 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
   };
 
   return (
-    <Card className="max-w-4xl mx-auto">
+    <Card className="max-w-4xl mx-auto mb-20">
       <CardHeader>
         {chunk.headingH1 && (
           <CardTitle className="text-3xl font-bold">{chunk.headingH1}</CardTitle>
@@ -192,7 +192,7 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
           </div>
         )}
 
-        <div className="mt-8 flex items-center justify-between border-t pt-4">
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t py-4 px-6 flex items-center justify-between">
           <div className="w-1/3 flex items-center gap-2">
             <Link href="/dashboard">
               <Button variant="ghost" size="icon">
