@@ -1,0 +1,31 @@
+
+4:38:47 PM [express] serving on port 5000
+4:39:00 PM [express] GET /api/manuscripts 304 in 438ms :: [{"id":1,"title":"sdfasdf","authorId":"160…
+4:39:02 PM [express] GET /api/manuscripts/1 304 in 409ms :: {"id":1,"title":"sdfasdf","authorId":"16…
+4:39:10 PM [express] GET /api/manuscripts/1/chunks 200 in 7335ms :: [{"id":1,"manuscriptId":1,"chunk…
+/home/runner/workspace/node_modules/src/pg-core/columns/timestamp.ts:66
+        return value.toISOString();
+                     ^
+
+
+TypeError: value.toISOString is not a function
+    at PgTimestamp.mapToDriverValue (/home/runner/workspace/node_modules/src/pg-core/columns/timestamp.ts:66:16)
+    at <anonymous> (/home/runner/workspace/node_modules/src/sql/sql.ts:223:69)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/home/runner/workspace/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/home/runner/workspace/node_modules/src/sql/sql.ts:174:17)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/home/runner/workspace/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/home/runner/workspace/node_modules/src/sql/sql.ts:174:17)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/home/runner/workspace/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/home/runner/workspace/node_modules/src/sql/sql.ts:124:23)
+    at Object.startActiveSpan (/home/runner/workspace/node_modules/src/tracing.ts:27:11)
+    at SQL.toQuery (/home/runner/workspace/node_modules/src/sql/sql.ts:123:17)
+    at PgDialect.sqlToQuery (/home/runner/workspace/node_modules/src/pg-core/dialect.ts:591:14)
+    at QueryPromise._prepare (/home/runner/workspace/node_modules/src/pg-core/query-builders/update.ts:542:18)
+    at QueryPromise.execute (/home/runner/workspace/node_modules/src/pg-core/query-builders/update.ts:559:15)
+    at QueryPromise.then (/home/runner/workspace/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+Node.js v20.16.0

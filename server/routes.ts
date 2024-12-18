@@ -134,7 +134,10 @@ export function registerRoutes(app: Express): Server {
 
     const [updated] = await db
       .update(manuscripts)
-      .set({ imageSettings, updatedAt: new Date().toISOString() })
+      .set({ 
+        imageSettings,
+        updatedAt: new Date()
+      })
       .where(eq(manuscripts.id, manuscript.id))
       .returning();
 
