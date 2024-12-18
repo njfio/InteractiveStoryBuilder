@@ -122,8 +122,9 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
         )}
 
         {isAuthor && (
-  <>
+  <div className="space-y-6">
     <ManuscriptImageSettings 
+      key={`settings-${chunk.manuscriptId}`}
       manuscriptId={chunk.manuscriptId} 
       currentSettings={chunk.manuscript?.imageSettings || {
         seed: 469,
@@ -135,8 +136,14 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
         style_reference_weight: 0.85
       }} 
     />
-    <ImageGenerator chunkId={chunk.id} manuscriptId={chunk.manuscriptId} />
-  </>
+    {chunk.manuscript && (
+      <ImageGenerator 
+        key={`generator-${chunk.manuscriptId}-${Date.now()}`}
+        chunkId={chunk.id} 
+        manuscriptId={chunk.manuscriptId} 
+      />
+    )}
+  </div>
 )}
 
         <div className="flex gap-2">

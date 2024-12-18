@@ -19,6 +19,11 @@ export function ImageGenerator({ chunkId, manuscriptId }: ImageGeneratorProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Force re-render when manuscriptId changes
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${manuscriptId}/chunks`] });
+  }, [manuscriptId, queryClient]);
+
   const generateImage = async () => {
     setIsGenerating(true);
     try {
