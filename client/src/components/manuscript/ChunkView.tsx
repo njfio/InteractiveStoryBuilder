@@ -262,7 +262,8 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
             </>
           )}
         </div>
-      <div className="mt-8 flex items-center justify-between border-t pt-4">
+
+        <div className="mt-8 flex items-center justify-between border-t pt-4">
           <div className="w-24 flex justify-start">
             <Link href="/dashboard">
               <Button variant="ghost" size="icon">
