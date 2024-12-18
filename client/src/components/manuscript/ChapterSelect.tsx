@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 
@@ -23,7 +23,7 @@ export function ChapterSelect({
         <DialogHeader>
           <DialogTitle>Chapter Select</DialogTitle>
           <DialogDescription>
-            Select a chapter to navigate through the manuscript
+            Navigate through the manuscript by selecting a chapter
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[60vh] pr-4">
