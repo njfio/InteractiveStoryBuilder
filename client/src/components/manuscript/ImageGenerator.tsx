@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,9 +18,13 @@ export function ImageGenerator({ chunkId }: ImageGeneratorProps) {
   const generateImage = async () => {
     setIsGenerating(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/generate-image', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({ chunkId, prompt }),
       });
 
