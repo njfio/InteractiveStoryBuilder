@@ -66,8 +66,22 @@ export const chunkRelations = relations(chunks, ({ one, many }) => ({
     fields: [chunks.manuscriptId],
     references: [manuscripts.id],
   }),
-  image: many(images),
+  images: many(images, {
+    fields: [chunks.id],
+    references: [images.chunkId],
+  }),
   seoMetadata: many(seoMetadata),
+}));
+
+export const imageRelations = relations(images, ({ one }) => ({
+  chunk: one(chunks, {
+    fields: [images.chunkId],
+    references: [chunks.id],
+  }),
+  manuscript: one(manuscripts, {
+    fields: [images.manuscriptId],
+    references: [manuscripts.id],
+  }),
 }));
 
 // Schemas for validation

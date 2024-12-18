@@ -95,7 +95,7 @@ export function registerRoutes(app: Express): Server {
     const results = await db.query.chunks.findMany({
       where: eq(chunks.manuscriptId, parseInt(req.params.id)),
       with: {
-        image: true,
+        images: true,
       },
       orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
     });
