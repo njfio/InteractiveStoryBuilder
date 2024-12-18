@@ -65,7 +65,16 @@ export async function generateImage(prompt: string): Promise<string> {
     throw new Error('Image generation failed: ' + (result.error || 'No output received'));
   }
 
+  if (!Array.isArray(result.output) || !result.output[0]) {
+    console.error('Unexpected API response format:', result);
+    throw new Error('Invalid output format from API');
+  }
+
   const imageUrl = result.output[0];
+  if (!imageUrl.startsWith('http')) {
+    console.error('Invalid image URL:', imageUrl);
+    throw new Error('Invalid image URL received from API');
+  }
   console.log('Final image URL from API:', imageUrl);
 
   // Create images directory if it doesn't exist
