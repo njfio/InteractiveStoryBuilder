@@ -103,31 +103,44 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Image Generation
-  app.post('/api/generate-image', async (req, res) => {
+  app.post('/api/generate-image', requireAuth, async (req, res) => {
     const { chunkId, prompt } = req.body;
-    const user = req.user as any;
-    if (!user) return res.status(401).send('Unauthorized');
+    const user = req.user;
 
-    const chunk = await db.query.chunks.findFirst({
-      where: eq(chunks.id, chunkId),
-      with: {
-        manuscript: true,
-      },
-    });
+    if (!user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
-    if (!chunk) return res.status(404).send('Chunk not found');
-    if (chunk.manuscript.authorId !== user.id) return res.status(403).send('Forbidden');
+    try {
+      const chunk = await db.query.chunks.findFirst({
+        where: eq(chunks.id, chunkId),
+        with: {
+          manuscript: true,
+        },
+      });
 
-    // TODO: Implement actual image generation with Replicate API
-    // For now, just create a placeholder image record
-    const [image] = await db.insert(images).values({
-      manuscriptId: chunk.manuscriptId,
-      chunkId: chunk.id,
-      localPath: '/placeholder.jpg',
-      promptParams: { prompt },
-    }).returning();
+      if (!chunk) {
+        return res.status(404).json({ message: 'Chunk not found' });
+      }
 
-    res.json(image);
+      if (chunk.manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      // TODO: Implement actual image generation with Replicate API
+      // For now, just create a placeholder image record
+      const [image] = await db.insert(images).values({
+        manuscriptId: chunk.manuscriptId,
+        chunkId: chunk.id,
+        localPath: '/placeholder.jpg',
+        promptParams: { prompt },
+      }).returning();
+
+      res.json(image);
+    } catch (error) {
+      console.error('Error generating image:', error);
+      res.status(500).json({ message: 'Failed to generate image' });
+    }
   });
 
   // Bulk Image Generation
