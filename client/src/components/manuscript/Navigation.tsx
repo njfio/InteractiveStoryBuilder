@@ -47,13 +47,7 @@ export function Navigation({ chunks, currentChunk, onNavigate }: NavigationProps
                     onClick={() => onNavigate(chunk.id)}
                   >
                     <span className="block truncate">
-                      {chunk.headingH1 
-                        ? chunk.headingH1
-                            .replace(/\*\*/g, '')  // Remove all ** markers
-                            .replace(/^#+\s*/, '') // Remove any # markers
-                            .substring(0, 40)      // Limit length
-                        : `Page ${chunk.id}`}
-                      {chunk.headingH1 && chunk.headingH1.length > 40 ? '...' : ''}
+                      {chunk.headingH1 || `Section ${chunk.order + 1}`}
                     </span>
                   </Button>
                 ))}

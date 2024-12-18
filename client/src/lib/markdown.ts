@@ -19,36 +19,36 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
   const chunks: ChunkData[] = [];
   let currentChunk: Partial<ChunkData> = { order: 0 };
   let chunkOrder = 0;
-  let currentH1: string | undefined;
+  let currentText = '';
+  let lastH1: string | undefined;
 
   visit(ast, (node: Node) => {
     if (node.type === 'heading' && 'depth' in node) {
-      // When we encounter an H1, store it for subsequent chunks
       if (node.depth === 1) {
-        currentH1 = getHeadingText(node);
-        // Don't create a chunk for just the heading
-        return;
+        // When we hit a new H1, save the previous chunk if it exists
+        if (currentText) {
+          chunks.push({
+            headingH1: lastH1,
+            text: currentText.trim(),
+            order: chunkOrder++
+          });
+          currentText = '';
+        }
+        lastH1 = getHeadingText(node).replace(/^\*\*(.*)\*\*$/, '$1').trim();
       }
     } else if (node.type === 'paragraph') {
-      // If we already have text in the current chunk, create a new one
-      if (currentChunk.text) {
-        chunks.push(currentChunk as ChunkData);
-        currentChunk = { 
-          order: ++chunkOrder,
-          headingH1: currentH1 // Carry forward the current H1
-        };
-      } else if (!currentChunk.headingH1) {
-        // If this is a new chunk without a heading, use the current H1
-        currentChunk.headingH1 = currentH1;
-      }
-      
-      currentChunk.text = getParagraphText(node);
+      const paragraphText = getParagraphText(node);
+      currentText += (currentText ? '\n\n' : '') + paragraphText;
     }
   });
 
-  // Don't forget the last chunk if it has content
-  if (currentChunk.text) {
-    chunks.push(currentChunk as ChunkData);
+  // Don't forget the last chunk
+  if (currentText) {
+    chunks.push({
+      headingH1: lastH1,
+      text: currentText.trim(),
+      order: chunkOrder
+    });
   }
 
   return chunks;
