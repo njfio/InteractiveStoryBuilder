@@ -58,23 +58,46 @@ interface ChunkViewProps {
 
 export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10; // This should come from your data
   const { toast } = useToast();
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const queryClient = useQueryClient();
+  const [allChunks, setAllChunks] = useState<any[]>([]);
+  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+
+  // Load all chunks when component mounts
+  useEffect(() => {
+    const loadChunks = async () => {
+      try {
+        const response = await fetch(`/api/manuscripts/${chunk.manuscriptId}/chunks`);
+        if (!response.ok) throw new Error('Failed to load chunks');
+        const chunks = await response.json();
+        setAllChunks(chunks);
+        // Find current chunk index
+        const index = chunks.findIndex((c: any) => c.id === chunk.id);
+        setCurrentChunkIndex(index !== -1 ? index : 0);
+      } catch (error) {
+        console.error('Error loading chunks:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load manuscript chunks',
+          variant: 'destructive',
+        });
+      }
+    };
+    loadChunks();
+  }, [chunk.manuscriptId, chunk.id]);
 
   const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-      // Add your page navigation logic here
+    if (currentChunkIndex > 0) {
+      const prevChunk = allChunks[currentChunkIndex - 1];
+      window.location.href = `/reader/${chunk.manuscriptId}?chunk=${prevChunk.id}`;
     }
   };
 
   const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1);
-      // Add your page navigation logic here
+    if (currentChunkIndex < allChunks.length - 1) {
+      const nextChunk = allChunks[currentChunkIndex + 1];
+      window.location.href = `/reader/${chunk.manuscriptId}?chunk=${nextChunk.id}`;
     }
   };
 
@@ -332,7 +355,7 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
                       variant="outline" 
                       size="icon" 
                       onClick={handlePreviousPage}
-                      disabled={currentPage === 1}
+                      disabled={currentChunkIndex === 0}
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -344,7 +367,7 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
               </TooltipProvider>
               
               <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                Page {currentChunkIndex + 1} of {allChunks.length}
               </span>
               
               <TooltipProvider>
@@ -354,7 +377,7 @@ export function ChunkView({ chunk, isAuthor }: ChunkViewProps) {
                       variant="outline" 
                       size="icon"
                       onClick={handleNextPage}
-                      disabled={currentPage === totalPages}
+                      disabled={currentChunkIndex === allChunks.length - 1}
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
