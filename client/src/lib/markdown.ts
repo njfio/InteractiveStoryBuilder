@@ -5,7 +5,7 @@ import { visit } from 'unist-util-visit';
 import { Node } from 'unist';
 
 interface ChunkData {
-  headingH1?: string; // Will store H3 titles
+  headingH1?: string;
   text: string;
   order: number;
 }
@@ -19,34 +19,34 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
   const chunks: ChunkData[] = [];
   let currentChunk: Partial<ChunkData> = { order: 0 };
   let chunkOrder = 0;
+  let currentH1: string | undefined;
 
   visit(ast, (node: Node) => {
     if (node.type === 'heading' && 'depth' in node) {
-      if (currentChunk.text) {
-        chunks.push(currentChunk as ChunkData);
-        currentChunk = { order: ++chunkOrder };
-      }
-
-      if (node.depth === 3) {
-        if (currentChunk.text) {
-          chunks.push(currentChunk as ChunkData);
-          currentChunk = { order: ++chunkOrder };
-        }
-        currentChunk.headingH1 = getHeadingText(node);
+      // When we encounter an H1, store it for subsequent chunks
+      if (node.depth === 1) {
+        currentH1 = getHeadingText(node);
+        // Don't create a chunk for just the heading
+        return;
       }
     } else if (node.type === 'paragraph') {
+      // If we already have text in the current chunk, create a new one
       if (currentChunk.text) {
         chunks.push(currentChunk as ChunkData);
         currentChunk = { 
           order: ++chunkOrder,
-          headingH1: currentChunk.headingH1,
-          headingH2: currentChunk.headingH2 
+          headingH1: currentH1 // Carry forward the current H1
         };
+      } else if (!currentChunk.headingH1) {
+        // If this is a new chunk without a heading, use the current H1
+        currentChunk.headingH1 = currentH1;
       }
+      
       currentChunk.text = getParagraphText(node);
     }
   });
 
+  // Don't forget the last chunk if it has content
   if (currentChunk.text) {
     chunks.push(currentChunk as ChunkData);
   }
