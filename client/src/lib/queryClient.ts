@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import { supabase } from './supabase';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
