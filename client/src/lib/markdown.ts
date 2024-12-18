@@ -17,39 +17,44 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
 
   const ast = await processor.parse(markdown);
   const chunks: ChunkData[] = [];
-  let currentChunk: Partial<ChunkData> = { order: 0 };
   let chunkOrder = 0;
+  let currentH1: string | undefined;
   let currentText = '';
-  let lastH1: string | undefined;
+
+  const saveChunk = (text: string) => {
+    if (text.trim()) {
+      chunks.push({
+        headingH1: currentH1,
+        text: text.trim(),
+        order: chunkOrder++
+      });
+    }
+  };
 
   visit(ast, (node: Node) => {
     if (node.type === 'heading' && 'depth' in node) {
       if (node.depth === 1) {
-        // When we hit a new H1, save the previous chunk if it exists
-        if (currentText) {
-          chunks.push({
-            headingH1: lastH1,
-            text: currentText.trim(),
-            order: chunkOrder++
-          });
-          currentText = '';
-        }
-        lastH1 = getHeadingText(node).replace(/^\*\*(.*)\*\*$/, '$1').trim();
+        // Save previous chunk if exists
+        saveChunk(currentText);
+        currentText = '';
+        // Update current H1
+        currentH1 = getHeadingText(node).replace(/^\*\*(.*)\*\*$/, '$1').trim();
+        // Create a chunk for the header itself
+        saveChunk(currentH1);
       }
     } else if (node.type === 'paragraph') {
       const paragraphText = getParagraphText(node);
-      currentText += (currentText ? '\n\n' : '') + paragraphText;
+      if (currentText) {
+        // Save previous paragraph as its own chunk
+        saveChunk(currentText);
+        currentText = '';
+      }
+      currentText = paragraphText;
     }
   });
 
-  // Don't forget the last chunk
-  if (currentText) {
-    chunks.push({
-      headingH1: lastH1,
-      text: currentText.trim(),
-      order: chunkOrder
-    });
-  }
+  // Save the final chunk if there's any content
+  saveChunk(currentText);
 
   return chunks;
 };

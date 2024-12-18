@@ -46,9 +46,14 @@ export function Navigation({ chunks, currentChunk, onNavigate }: NavigationProps
                     className="w-full justify-start text-left"
                     onClick={() => onNavigate(chunk.id)}
                   >
-                    <span className="block truncate">
-                      {chunk.headingH1 || `Section ${chunk.order + 1}`}
-                    </span>
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium truncate">
+                        {chunk.headingH1 || 'Untitled Section'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Section {chunk.order + 1}
+                      </span>
+                    </div>
                   </Button>
                 ))}
               </div>
