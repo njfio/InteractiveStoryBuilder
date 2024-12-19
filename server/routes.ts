@@ -566,6 +566,11 @@ export function registerRoutes(app: Express): Server {
       const sanitizedTitle = manuscript.title.replace(/[^a-zA-Z0-9]/g, '_');
       console.log(`Preparing to export manuscript "${manuscript.title}" in ${format} format`);
 
+      // Create a temporary directory for the export
+      const exportDir = join(tmpDir, `export-${Date.now()}`);
+      await fs.mkdir(exportDir, { recursive: true });
+      await fs.mkdir(join(exportDir, 'images'), { recursive: true });
+
       // Compile content from chunks
       let content = `# ${manuscript.title}\n\n`;
       for (const chunk of chunksWithImages) {
@@ -577,10 +582,19 @@ export function registerRoutes(app: Express): Server {
         }
         content += chunk.text + '\n\n';
         
-        // Add image if exists
+        // Copy image if exists and update the path
         if (chunk.images?.[0]?.localPath) {
-          const imagePath = chunk.images[0].localPath;
-          content += `![Generated illustration](${imagePath})\n\n`;
+          const sourceImagePath = join(process.cwd(), chunk.images[0].localPath);
+          const imageFilename = chunk.images[0].localPath.split('/').pop();
+          const targetImagePath = join(exportDir, 'images', imageFilename!);
+          
+          try {
+            await fs.copyFile(sourceImagePath, targetImagePath);
+            content += `![Generated illustration](images/${imageFilename})\n\n`;
+          } catch (err) {
+            console.error(`Failed to copy image ${sourceImagePath}:`, err);
+            // Continue without the image if it can't be copied
+          }
         }
       }
 
@@ -610,7 +624,8 @@ export function registerRoutes(app: Express): Server {
               
               if (chunk.images?.[0]?.localPath) {
                 const imagePath = chunk.images[0].localPath;
-                chapterContent += `<img src="${process.cwd() + imagePath}" alt="Generated illustration"/>`;
+                const imageFilename = imagePath.split('/').pop();
+                chapterContent += `<img src="images/${imageFilename}" alt="Generated illustration"/>`;
               }
 
               return {
@@ -641,25 +656,25 @@ export function registerRoutes(app: Express): Server {
 
         case 'docx':
           console.log('Starting DOCX conversion...');
-          const inputFile = join(tmpDir, `${sanitizedTitle}.md`);
-          const outputFile = join(tmpDir, `${sanitizedTitle}.docx`);
+          const inputFile = join(exportDir, `${sanitizedTitle}.md`);
+          const outputFile = join(exportDir, `${sanitizedTitle}.docx`);
           
           try {
             console.log('Writing markdown content to temporary file...');
             await fs.writeFile(inputFile, content);
             
             console.log('Converting markdown to DOCX using pandoc with images...');
-            // Use pandoc with --extract-media to handle images
-            await execAsync(`pandoc -f markdown -t docx "${inputFile}" -o "${outputFile}" --extract-media=.`);
+            // Use pandoc with the correct working directory
+            await execAsync(`cd "${exportDir}" && pandoc -f markdown -t docx "${sanitizedTitle}.md" -o "${sanitizedTitle}.docx"`);
             console.log('DOCX conversion completed successfully');
             
             res.download(outputFile, `${sanitizedTitle}.docx`, () => {
               console.log('DOCX download completed, cleaning up...');
-              cleanupFiles(inputFile, outputFile);
+              cleanupFiles(exportDir);
             });
           } catch (error) {
             console.error('DOCX conversion error:', error);
-            await cleanupFiles(inputFile, outputFile);
+            await cleanupFiles(exportDir);
             throw new Error('Failed to convert to DOCX');
           }
           break;
