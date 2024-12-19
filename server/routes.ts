@@ -14,8 +14,13 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_ANON_KEY!
 );
 
-// Default base URL for local development
-const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
+// Helper function to get the public URL
+function getPublicUrl(req: Request): string {
+  // For Replit: use the request host
+  const host = req.get('host') || 'localhost:5000';
+  const protocol = req.protocol || 'http';
+  return `${protocol}://${host}`;
+}
 import { requireAuth } from './middleware/auth';
 import { eq, sql } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
@@ -604,8 +609,9 @@ export function registerRoutes(app: Express): Server {
           try {
             await fs.copyFile(sourceImagePath, targetImagePath);
             if (format === 'markdown') {
-              // For markdown, use the full URL path
-              content += `![Generated illustration](${BASE_URL}${chunk.images[0].localPath})\n\n`;
+              // For markdown, use the full URL path with public URL
+              const publicUrl = getPublicUrl(req);
+              content += `![Generated illustration](${publicUrl}${chunk.images[0].localPath})\n\n`;
             } else if (format === 'docx') {
               // For DOCX, use relative path that pandoc can resolve
               content += `![Generated illustration](${join('images', imageFilename!)})\n\n`;
