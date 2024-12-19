@@ -20,24 +20,19 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
   let chunkOrder = 0;
   let currentH1: string | undefined;
   let currentText = '';
-  let lineCount = 0;
+  let currentChunkLines = 0;
+  let preservingSpecialSection = false;
 
-  const isActivityOrSummary = (text: string): boolean => {
-    const keywords = ['Activity', 'Summary', 'Exercise'];
-    return keywords.some(keyword => text.startsWith(keyword));
-  };
-
-  const countTextLines = (text: string): number => {
+  const countContentLines = (text: string): number => {
     return text.split('\n').filter(line => line.trim()).length;
   };
 
   const saveChunk = (text: string, force: boolean = false) => {
-    // Remove leading/trailing empty lines but preserve internal formatting
-    const trimmedText = text.replace(/^\n+|\n+$/g, '');
+    const trimmedText = text.trim();
     if (!trimmedText) return;
 
-    // Don't create chunks with less than 4 lines unless forced
-    if (!force && countTextLines(trimmedText) < 4) return;
+    // Don't create chunks with less than 4 content lines unless forced
+    if (!force && countContentLines(trimmedText) < 4) return;
 
     chunks.push({
       headingH1: currentH1,
@@ -46,93 +41,100 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
     });
   };
 
+  let lastNode: Node | null = null;
+  let inList = false;
+
   visit(ast, (node: Node) => {
+    // Add appropriate spacing between different node types
+    if (lastNode && currentText && !preservingSpecialSection) {
+      if (node.type !== 'listItem' && lastNode.type !== 'listItem') {
+        if (!currentText.endsWith('\n\n')) {
+          currentText += '\n\n';
+        }
+      } else if (node.type === 'listItem') {
+        if (!currentText.endsWith('\n')) {
+          currentText += '\n';
+        }
+      }
+    }
+
     if (node.type === 'heading' && 'depth' in node) {
       if (node.depth === 1) {
-        // Save existing content before starting new section
-        if (currentText && countTextLines(currentText) >= 4) {
+        // Save previous chunk if it has enough content
+        if (currentText && countContentLines(currentText) >= 4) {
           saveChunk(currentText);
         }
 
         // Reset state for new section
         currentText = '';
-        lineCount = 0;
+        currentChunkLines = 0;
+        preservingSpecialSection = false;
 
-        // Update current H1 without including it in the content
-        currentH1 = getHeadingText(node).replace(/^\*\*(.*)\*\*$/, '$1').trim();
+        // Just store H1 without adding to content
+        currentH1 = getHeadingText(node);
       } else {
-        // For other heading levels, preserve the markdown syntax
-        if (currentText && !currentText.endsWith('\n\n')) {
-          currentText += '\n\n';
-        }
+        // Preserve exact heading formatting
         currentText += `${'#'.repeat((node as any).depth)} ${getHeadingText(node)}\n`;
-        lineCount++;
+        currentChunkLines++;
       }
     } else if (node.type === 'list') {
-      // Preserve list formatting
-      if (currentText && !currentText.endsWith('\n\n')) {
-        currentText += '\n\n';
-      }
-      const listItems = [];
-      visit(node, 'listItem', (item: any) => {
-        let itemText = '';
-        visit(item, 'paragraph', (p: any) => {
-          itemText += getParagraphText(p);
-        });
-        listItems.push(itemText);
+      inList = true;
+      // Lists are handled by their items
+    } else if (node.type === 'listItem') {
+      const prefix = (node.parent as any).ordered 
+        ? `${((node.parent as any).start || 1) + (node as any).index}.`
+        : '-';
+
+      let itemText = '';
+      visit(node, 'paragraph', (p: any) => {
+        itemText += getParagraphText(p);
       });
-      const isOrdered = (node as any).ordered;
-      currentText += listItems.map((item, index) => 
-        `${isOrdered ? `${index + 1}.` : '-'} ${item}`
-      ).join('\n');
-      lineCount += listItems.length;
+
+      currentText += `${prefix} ${itemText}\n`;
+      currentChunkLines++;
     } else if (node.type === 'paragraph') {
       const paragraphText = getParagraphText(node);
-      const paragraphLines = countTextLines(paragraphText);
+      const contentLines = countContentLines(paragraphText);
 
-      // Special sections should stay together
-      if (isActivityOrSummary(paragraphText)) {
-        if (currentText) {
+      // Check for special sections
+      if (!preservingSpecialSection && isActivityOrSummary(paragraphText)) {
+        if (currentText && countContentLines(currentText) >= 4) {
           saveChunk(currentText);
         }
         currentText = paragraphText;
-        lineCount = paragraphLines;
+        currentChunkLines = contentLines;
+        preservingSpecialSection = true;
         return;
       }
 
-      // Add paragraph to current chunk with proper formatting
-      if (currentText && !currentText.endsWith('\n\n')) {
-        currentText += '\n\n';
-      }
       currentText += paragraphText;
-      lineCount += paragraphLines;
+      currentChunkLines += contentLines;
 
-      // Create a new chunk if we have enough lines
-      if (lineCount >= 4) {
+      // Create new chunk if we have enough content
+      if (!preservingSpecialSection && !inList && currentChunkLines >= 4) {
         saveChunk(currentText);
         currentText = '';
-        lineCount = 0;
+        currentChunkLines = 0;
       }
-    } else if (node.type === 'text' || node.type === 'break') {
-      // Preserve standalone text nodes and line breaks
-      if (currentText && !currentText.endsWith('\n')) {
-        currentText += '\n';
-      }
-      if (node.type === 'text') {
-        currentText += (node as any).value;
-        lineCount += countTextLines((node as any).value);
-      } else {
-        currentText += '\n';
-      }
+    }
+
+    lastNode = node;
+    if (node.type === 'list') {
+      inList = false;
     }
   });
 
-  // Save the final chunk if there's any content
+  // Save final chunk if it has content
   if (currentText) {
     saveChunk(currentText, true);
   }
 
   return chunks;
+};
+
+const isActivityOrSummary = (text: string): boolean => {
+  const keywords = ['Activity', 'Summary', 'Exercise'];
+  return keywords.some(keyword => text.startsWith(keyword));
 };
 
 const getHeadingText = (node: Node): string => {
@@ -145,11 +147,10 @@ const getHeadingText = (node: Node): string => {
 
 const getParagraphText = (node: Node): string => {
   let text = '';
-  let lastNode: any;
 
   visit(node, (childNode: any) => {
     if (childNode.type === 'text') {
-      // Add space between text nodes if needed
+      // Preserve exact spacing
       if (text && !text.endsWith(' ') && !childNode.value.startsWith(' ')) {
         text += ' ';
       }
@@ -157,7 +158,6 @@ const getParagraphText = (node: Node): string => {
     } else if (childNode.type === 'break') {
       text += '\n';
     }
-    lastNode = childNode;
   });
 
   return text;
