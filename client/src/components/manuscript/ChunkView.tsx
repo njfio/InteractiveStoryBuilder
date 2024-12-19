@@ -350,7 +350,7 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                       </DialogHeader>
                       <div className="space-y-6">
                         <ImageGenerator 
-                          key={`generator-${chunk.manuscriptId}-${chunk.manuscript?.imageSettings?.seed}`}
+                          key={`generator-${chunk.manuscriptId}-${chunk.manuscript.imageSettings.seed ?? 469}`}
                           chunkId={chunk.id} 
                           manuscriptId={chunk.manuscriptId} 
                         />

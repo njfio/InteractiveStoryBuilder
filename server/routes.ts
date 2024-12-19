@@ -497,5 +497,113 @@ export function registerRoutes(app: Express): Server {
   });
 
   const httpServer = createServer(app);
+  // Export Manuscript
+  app.get('/api/manuscripts/:id/export', async (req, res) => {
+    try {
+      const format = req.query.format as string;
+      if (!['epub', 'markdown', 'docx'].includes(format)) {
+        return res.status(400).json({ message: 'Invalid export format' });
+      }
+
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.id)),
+        columns: {
+          title: true,
+          originalMarkdown: true,
+        },
+      });
+
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      const chunks = await db.query.chunks.findMany({
+        where: eq(chunks.manuscriptId, parseInt(req.params.id)),
+        orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
+      });
+
+      // Ensure tmp directory exists
+      const fs = require('fs/promises');
+      const path = require('path');
+      const tmpDir = '/tmp';
+      try {
+        await fs.access(tmpDir);
+      } catch {
+        await fs.mkdir(tmpDir, { recursive: true });
+      }
+
+      // Clean up function for temporary files
+      const cleanupFiles = async (...files: string[]) => {
+        for (const file of files) {
+          try {
+            await fs.unlink(file);
+          } catch (err) {
+            console.error(`Failed to cleanup file ${file}:`, err);
+          }
+        }
+      };
+
+      const content = manuscript.originalMarkdown;
+      const sanitizedTitle = manuscript.title.replace(/[^a-zA-Z0-9]/g, '_');
+
+      switch (format) {
+        case 'markdown':
+          res.set('Content-Type', 'text/markdown');
+          res.set('Content-Disposition', `attachment; filename="${sanitizedTitle}.md"`);
+          return res.send(content);
+
+        case 'epub':
+          const EPub = require('epub-gen');
+          const epubFilePath = path.join(tmpDir, `${sanitizedTitle}.epub`);
+          
+          try {
+            await new EPub({
+              title: manuscript.title,
+              content: [{
+                title: manuscript.title,
+                data: content
+              }],
+              tempDir: tmpDir
+            }, epubFilePath).promise;
+
+            res.download(epubFilePath, `${sanitizedTitle}.epub`, () => {
+              cleanupFiles(epubFilePath);
+            });
+          } catch (error) {
+            console.error('EPUB generation error:', error);
+            throw new Error('Failed to generate EPUB');
+          }
+          break;
+
+        case 'docx':
+          const { exec } = require('child_process');
+          const util = require('util');
+          const execAsync = util.promisify(exec);
+          
+          const inputFile = path.join(tmpDir, `${sanitizedTitle}.md`);
+          const outputFile = path.join(tmpDir, `${sanitizedTitle}.docx`);
+          
+          try {
+            await fs.writeFile(inputFile, content);
+            await execAsync(`pandoc -f markdown -t docx "${inputFile}" -o "${outputFile}"`);
+            
+            res.download(outputFile, `${sanitizedTitle}.docx`, () => {
+              cleanupFiles(inputFile, outputFile);
+            });
+          } catch (error) {
+            await cleanupFiles(inputFile, outputFile);
+            console.error('DOCX conversion error:', error);
+            throw new Error('Failed to convert to DOCX');
+          }
+          break;
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ 
+        message: (error as Error).message || 'Failed to export manuscript' 
+      });
+    }
+  });
+
   return httpServer;
 }

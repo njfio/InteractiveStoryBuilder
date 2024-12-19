@@ -4,6 +4,7 @@ import { useRoute, useLocation } from 'wouter';
 import { ChunkView } from '@/components/manuscript/ChunkView';
 import { useAuthStore } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
+import { ExportDialog } from '@/components/manuscript/ExportDialog';
 
 interface Chunk {
   id: number;
@@ -12,6 +13,20 @@ interface Chunk {
   headingH2?: string;
   text: string;
   imageUrl?: string;
+  manuscript: {
+    id: number;
+    title: string;
+    authorId: string;
+    imageSettings: {
+      seed: number;
+      prompt: string;
+      aspect_ratio: string;
+      image_reference_url: string | null;
+      style_reference_url: string | null;
+      image_reference_weight: number;
+      style_reference_weight: number;
+    };
+  };
 }
 
 interface Manuscript {
@@ -91,7 +106,10 @@ export function Reader() {
     <div className="min-h-screen pb-24">
       <div className="max-w-4xl mx-auto p-6">
         <header className="mb-12 text-center">
-          <h1 className="text-4xl font-bold mb-2">{manuscript.title}</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-4xl font-bold">{manuscript.title}</h1>
+            <ExportDialog manuscriptId={manuscript.id} title={manuscript.title} />
+          </div>
           <p className="text-muted-foreground">
             by {manuscript.author?.email || 'Anonymous'}
           </p>
