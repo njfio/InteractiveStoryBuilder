@@ -22,8 +22,8 @@ const imageSettingsSchema = z.object({
   seed: z.number().int().positive(),
   prompt: z.string().min(1, "Prompt is required"),
   aspect_ratio: z.string().default("9:16"),
-  image_reference_url: z.string().url().nullish().optional(),
-  style_reference_url: z.string().url().nullish().optional(),
+  image_reference_url: z.string().url().optional().or(z.literal("")),
+  style_reference_url: z.string().url().optional().or(z.literal("")),
   image_reference_weight: z.number().min(0).max(1).default(0.85),
   style_reference_weight: z.number().min(0).max(1).default(0.85),
 });
@@ -42,12 +42,12 @@ export function ManuscriptImageSettings({ manuscriptId, currentSettings }: Manus
 
   const form = useForm<ImageSettings>({
     resolver: zodResolver(imageSettingsSchema),
-    values: {
+    defaultValues: {
       seed: currentSettings.seed,
       prompt: currentSettings.prompt,
       aspect_ratio: currentSettings.aspect_ratio,
-      image_reference_url: currentSettings.image_reference_url ?? "",
-      style_reference_url: currentSettings.style_reference_url ?? "",
+      image_reference_url: currentSettings.image_reference_url || "",
+      style_reference_url: currentSettings.style_reference_url || "",
       image_reference_weight: currentSettings.image_reference_weight,
       style_reference_weight: currentSettings.style_reference_weight,
     },
