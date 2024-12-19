@@ -522,10 +522,19 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: 'Manuscript not found' });
       }
 
-      const chunks2 = await db.query.chunks.findMany({
+      console.log('Fetching chunks and images...');
+      const chunksWithImages = await db.query.chunks.findMany({
         where: eq(chunks.manuscriptId, parseInt(req.params.id)),
         orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
+        with: {
+          images: {
+            limit: 1, // Get the latest image for each chunk
+            orderBy: (images, { desc }) => [desc(images.createdAt)]
+          }
+        }
       });
+
+      console.log(`Found ${chunksWithImages.length} chunks`);
       
       console.log('Starting manuscript export process...');
       
@@ -554,9 +563,26 @@ export function registerRoutes(app: Express): Server {
         }
       };
 
-      const content = manuscript.originalMarkdown;
       const sanitizedTitle = manuscript.title.replace(/[^a-zA-Z0-9]/g, '_');
       console.log(`Preparing to export manuscript "${manuscript.title}" in ${format} format`);
+
+      // Compile content from chunks
+      let content = `# ${manuscript.title}\n\n`;
+      for (const chunk of chunksWithImages) {
+        if (chunk.headingH1) {
+          content += `# ${chunk.headingH1}\n\n`;
+        }
+        if (chunk.headingH2) {
+          content += `## ${chunk.headingH2}\n\n`;
+        }
+        content += chunk.text + '\n\n';
+        
+        // Add image if exists
+        if (chunk.images?.[0]?.localPath) {
+          const imagePath = chunk.images[0].localPath;
+          content += `![Generated illustration](${imagePath})\n\n`;
+        }
+      }
 
       switch (format) {
         case 'markdown':
@@ -571,12 +597,31 @@ export function registerRoutes(app: Express): Server {
           
           try {
             console.log('Configuring EPUB generator...');
+            // Prepare EPUB content with images
+            const epubContent = chunksWithImages.map(chunk => {
+              let chapterContent = '';
+              if (chunk.headingH1) {
+                chapterContent += `<h1>${chunk.headingH1}</h1>\n`;
+              }
+              if (chunk.headingH2) {
+                chapterContent += `<h2>${chunk.headingH2}</h2>\n`;
+              }
+              chapterContent += `<p>${chunk.text}</p>\n`;
+              
+              if (chunk.images?.[0]?.localPath) {
+                const imagePath = chunk.images[0].localPath;
+                chapterContent += `<img src="${process.cwd() + imagePath}" alt="Generated illustration"/>`;
+              }
+
+              return {
+                title: chunk.headingH1 || 'Chapter',
+                data: chapterContent
+              };
+            });
+
             const epub = new EPub({
               title: manuscript.title,
-              content: [{
-                title: manuscript.title,
-                data: content
-              }],
+              content: epubContent,
               tempDir: tmpDir
             }, epubFilePath);
 
@@ -603,8 +648,9 @@ export function registerRoutes(app: Express): Server {
             console.log('Writing markdown content to temporary file...');
             await fs.writeFile(inputFile, content);
             
-            console.log('Converting markdown to DOCX using pandoc...');
-            await execAsync(`pandoc -f markdown -t docx "${inputFile}" -o "${outputFile}"`);
+            console.log('Converting markdown to DOCX using pandoc with images...');
+            // Use pandoc with --extract-media to handle images
+            await execAsync(`pandoc -f markdown -t docx "${inputFile}" -o "${outputFile}" --extract-media=.`);
             console.log('DOCX conversion completed successfully');
             
             res.download(outputFile, `${sanitizedTitle}.docx`, () => {
