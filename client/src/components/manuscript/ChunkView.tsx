@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { ChapterSelect } from './ChapterSelect';
 import { ImageGenerator } from './ImageGenerator';
 import { ManuscriptImageSettings } from './ManuscriptImageSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Play, 
-  Share2, 
+import {
+  Play,
+  Share2,
   Settings2,
-  Loader2, 
-  Images, 
-  ChevronLeft, 
-  ChevronRight, 
+  Loader2,
+  Images,
+  ChevronLeft,
+  ChevronRight,
   Home,
   BookOpen
 } from 'lucide-react';
@@ -55,7 +58,6 @@ interface Chunk {
   id: number;
   manuscriptId: number;
   headingH1?: string;
-  headingH2?: string;
   text: string;
   imageUrl?: string;
   manuscript: Manuscript;
@@ -97,14 +99,14 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
 
       const response = await fetch('/api/generate-image', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
         credentials: 'include',
         body: JSON.stringify(chunkData),
       });
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           throw new Error('Please sign in to generate images');
@@ -147,7 +149,7 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
 
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
-      
+
       if (audio) {
         audio.pause();
         URL.revokeObjectURL(audio.src);
@@ -201,15 +203,41 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
     <Card className="max-w-4xl mx-auto mb-24">
       <CardHeader>
         {chunk.headingH1 && (
-          <CardTitle className="text-3xl font-bold">{chunk.headingH1}</CardTitle>
-        )}
-        {chunk.headingH2 && (
-          <h3 className="text-xl text-gray-600">{chunk.headingH2}</h3>
+          <CardTitle className="text-3xl font-bold">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]} 
+              rehypePlugins={[rehypeRaw]}
+              components={{
+                p: ({node, ...props}) => <p className="m-0" {...props} />
+              }}
+            >
+              {chunk.headingH1}
+            </ReactMarkdown>
+          </CardTitle>
         )}
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="prose max-w-none">
-          <p className="text-lg leading-relaxed">{chunk.text}</p>
+        <div className="prose prose-lg max-w-none dark:prose-invert">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+            components={{
+              code: ({node, inline, ...props}) => (
+                inline ? 
+                <code {...props} /> :
+                <pre className="whitespace-pre-wrap"><code {...props} /></pre>
+              ),
+              p: ({node, ...props}) => <p className="my-4" {...props} />,
+              ul: ({node, ...props}) => <ul className="list-disc pl-6 my-4" {...props} />,
+              ol: ({node, ...props}) => <ol className="list-decimal pl-6 my-4" {...props} />,
+              h1: ({node, ...props}) => <h1 className="text-3xl font-bold mt-8 mb-4" {...props} />,
+              h2: ({node, ...props}) => <h2 className="text-2xl font-bold mt-6 mb-3" {...props} />,
+              h3: ({node, ...props}) => <h3 className="text-xl font-semibold mt-5 mb-2" {...props} />,
+              h4: ({node, ...props}) => <h4 className="text-lg font-semibold mt-4 mb-2" {...props} />
+            }}
+          >
+            {chunk.text}
+          </ReactMarkdown>
         </div>
 
         {chunk.imageUrl && (
@@ -228,8 +256,8 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="icon"
                       onClick={() => setChapterSelectOpen(true)}
                     >
@@ -287,9 +315,9 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={handlePreviousPage}
                       disabled={currentChunkIndex === 0}
                     >
@@ -301,16 +329,16 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              
+
               <span className="text-sm text-muted-foreground">
                 Page {currentChunkIndex + 1} of {allChunks.length}
               </span>
-              
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="icon"
                       onClick={handleNextPage}
                       disabled={currentChunkIndex === allChunks.length - 1}
@@ -349,13 +377,13 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-6">
-                        <ImageGenerator 
+                        <ImageGenerator
                           key={`generator-${chunk.manuscriptId}-${chunk.manuscript.imageSettings.seed ?? 469}`}
-                          chunkId={chunk.id} 
-                          manuscriptId={chunk.manuscriptId} 
+                          chunkId={chunk.id}
+                          manuscriptId={chunk.manuscriptId}
                         />
-                        <ManuscriptImageSettings 
-                          manuscriptId={chunk.manuscriptId} 
+                        <ManuscriptImageSettings
+                          manuscriptId={chunk.manuscriptId}
                           currentSettings={{
                             seed: chunk.manuscript?.imageSettings?.seed ?? 469,
                             prompt: chunk.manuscript?.imageSettings?.prompt ?? "",
@@ -364,14 +392,14 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                             style_reference_url: chunk.manuscript?.imageSettings?.style_reference_url ?? "",
                             image_reference_weight: chunk.manuscript?.imageSettings?.image_reference_weight ?? 0.85,
                             style_reference_weight: chunk.manuscript?.imageSettings?.style_reference_weight ?? 0.85
-                          }} 
+                          }}
                         />
                       </div>
                     </DialogContent>
                   </Dialog>
                 </TooltipProvider>
               )}
-              
+
               {isAuthor && (
                 <TooltipProvider>
                   <Tooltip>
@@ -379,9 +407,9 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                       <Button
                         variant="ghost"
                         onClick={() => {
-                          generateImage.mutate({ 
+                          generateImage.mutate({
                             chunkId: chunk.id,
-                            prompt: chunk.text 
+                            prompt: chunk.text
                           });
                         }}
                         disabled={generateImage.isPending}
@@ -403,7 +431,7 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                   </Tooltip>
                 </TooltipProvider>
               )}
-              
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
