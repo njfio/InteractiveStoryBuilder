@@ -112,16 +112,6 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
     saveChunk(currentText);
   }
 
-  // Save the final chunk if there's any content
-  if (currentText) {
-    saveChunk(currentText);
-  }
-
-  // Save the final chunk if there's any content
-  if (currentText) {
-    saveChunk(currentText);
-  }
-
   return chunks;
 };
 
