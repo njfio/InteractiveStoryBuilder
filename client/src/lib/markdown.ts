@@ -53,18 +53,43 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
         if (currentText && countTextLines(currentText) >= 4) {
           saveChunk(currentText);
         }
-        
+
         // Reset state for new section
         currentText = '';
         lineCount = 0;
-        
+
         // Update current H1 without including it in the content
         currentH1 = getHeadingText(node).replace(/^\*\*(.*)\*\*$/, '$1').trim();
+      } else {
+        // For other heading levels, preserve the markdown syntax
+        if (currentText && !currentText.endsWith('\n\n')) {
+          currentText += '\n\n';
+        }
+        currentText += `${'#'.repeat((node as any).depth)} ${getHeadingText(node)}\n`;
+        lineCount++;
       }
+    } else if (node.type === 'list') {
+      // Preserve list formatting
+      if (currentText && !currentText.endsWith('\n\n')) {
+        currentText += '\n\n';
+      }
+      const listItems = [];
+      visit(node, 'listItem', (item: any) => {
+        let itemText = '';
+        visit(item, 'paragraph', (p: any) => {
+          itemText += getParagraphText(p);
+        });
+        listItems.push(itemText);
+      });
+      const isOrdered = (node as any).ordered;
+      currentText += listItems.map((item, index) => 
+        `${isOrdered ? `${index + 1}.` : '-'} ${item}`
+      ).join('\n');
+      lineCount += listItems.length;
     } else if (node.type === 'paragraph') {
       const paragraphText = getParagraphText(node);
       const paragraphLines = countTextLines(paragraphText);
-      
+
       // Special sections should stay together
       if (isActivityOrSummary(paragraphText)) {
         if (currentText) {
@@ -76,7 +101,7 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
       }
 
       // Add paragraph to current chunk with proper formatting
-      if (currentText) {
+      if (currentText && !currentText.endsWith('\n\n')) {
         currentText += '\n\n';
       }
       currentText += paragraphText;
@@ -121,7 +146,7 @@ const getHeadingText = (node: Node): string => {
 const getParagraphText = (node: Node): string => {
   let text = '';
   let lastNode: any;
-  
+
   visit(node, (childNode: any) => {
     if (childNode.type === 'text') {
       // Add space between text nodes if needed
