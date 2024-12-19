@@ -204,8 +204,8 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
       <CardHeader>
         {chunk.headingH1 && (
           <CardTitle className="text-3xl font-bold">
-            <ReactMarkdown 
-              remarkPlugins={[remarkGfm]} 
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
               components={{
                 p: ({node, ...props}) => <p className="m-0" {...props} />
@@ -222,18 +222,21 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeRaw]}
             components={{
-              code: ({node, inline, ...props}) => (
-                inline ? 
-                <code {...props} /> :
-                <pre className="whitespace-pre-wrap"><code {...props} /></pre>
+              p: ({children, ...props}) => (
+                <p className="my-4 leading-relaxed" {...props}>
+                  {children}
+                </p>
               ),
-              p: ({node, ...props}) => <p className="my-4" {...props} />,
-              ul: ({node, ...props}) => <ul className="list-disc pl-6 my-4" {...props} />,
-              ol: ({node, ...props}) => <ol className="list-decimal pl-6 my-4" {...props} />,
-              h1: ({node, ...props}) => <h1 className="text-3xl font-bold mt-8 mb-4" {...props} />,
-              h2: ({node, ...props}) => <h2 className="text-2xl font-bold mt-6 mb-3" {...props} />,
-              h3: ({node, ...props}) => <h3 className="text-xl font-semibold mt-5 mb-2" {...props} />,
-              h4: ({node, ...props}) => <h4 className="text-lg font-semibold mt-4 mb-2" {...props} />
+              ul: ({children, ...props}) => (
+                <ul className="list-disc pl-6 my-4 space-y-2" {...props}>
+                  {children}
+                </ul>
+              ),
+              ol: ({children, ...props}) => (
+                <ol className="list-decimal pl-6 my-4 space-y-2" {...props}>
+                  {children}
+                </ol>
+              )
             }}
           >
             {chunk.text}

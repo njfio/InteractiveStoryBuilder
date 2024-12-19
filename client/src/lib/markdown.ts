@@ -25,18 +25,26 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
 
   // Track current chunk building
   let currentLines: string[] = [];
-  let inChunk = false;
+  let processedLines = new Set<number>();
 
   // Function to get exact text from line numbers
   const getExactText = (start: number, end: number): string => {
-    return lines.slice(start - 1, end).join('\n');
+    // Only get lines we haven't processed yet
+    const textLines = [];
+    for (let i = start - 1; i < end; i++) {
+      if (!processedLines.has(i)) {
+        textLines.push(lines[i]);
+        processedLines.add(i);
+      }
+    }
+    return textLines.join('\n');
   };
 
   // Function to save current chunk
   const saveChunk = () => {
     if (currentLines.length > 0) {
-      const text = currentLines.join('\n');
-      if (text.trim()) {
+      const text = currentLines.join('\n').trim();
+      if (text) {
         chunks.push({
           headingH1: currentH1,
           text,
@@ -44,50 +52,64 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
         });
       }
       currentLines = [];
-      inChunk = false;
     }
   };
 
-  // Process each node in document order
+  // First pass: Mark all heading positions
+  const headings = new Map<number, { depth: number; node: any }>();
+  visit(ast, 'heading', (node: any) => {
+    if (node.position) {
+      headings.set(node.position.start.line, { depth: node.depth, node });
+    }
+  });
+
+  // Second pass: Process content with awareness of heading boundaries
+  let lastNodeEnd = 0;
   visit(ast, (node: any) => {
     if (!node.position) return;
+    const start = node.position.start.line;
+    const end = node.position.end.line;
 
+    // Skip if we've already processed these lines
+    if ([...processedLines].some(line => line >= start - 1 && line < end)) {
+      return;
+    }
+
+    // Handle headings specially
     if (node.type === 'heading') {
       // Always save current chunk before a heading
       saveChunk();
 
-      const headingText = getExactText(
-        node.position.start.line,
-        node.position.end.line
-      );
+      const headingText = node.children.map((child: any) => child.value).join('').trim();
 
       if (node.depth === 1) {
-        // For H1, just store it without including in chunk
-        currentH1 = node.children.map((child: any) => child.value).join('').trim();
+        currentH1 = headingText;
       } else {
-        // For H2-H6, start new chunk with the heading
-        currentLines.push(headingText);
-        inChunk = true;
-      }
-    } else if (inChunk || node.type === 'paragraph' || node.type === 'list') {
-      // Get exact text including whitespace
-      const text = getExactText(
-        node.position.start.line,
-        node.position.end.line
-      );
-
-      // Add blank line before if needed
-      if (currentLines.length > 0) {
-        currentLines.push('');
+        // For non-H1 headings, include them in the chunk with proper markdown syntax
+        currentLines.push(`${'#'.repeat(node.depth)} ${headingText}`);
       }
 
-      // Add the text with original formatting
-      currentLines.push(text);
-      inChunk = true;
+      return;
     }
+
+    // Add content to current chunk
+    const text = getExactText(start, end);
+    if (text.trim()) {
+      if (currentLines.length > 0) {
+        currentLines.push(''); // Add blank line between content blocks
+      }
+      currentLines.push(text);
+
+      // Check if we should create a new chunk
+      if (node.type === 'paragraph' && !node.parent?.type?.match(/list|blockquote/)) {
+        saveChunk();
+      }
+    }
+
+    lastNodeEnd = end;
   });
 
-  // Save any remaining content
+  // Save final chunk
   saveChunk();
 
   return chunks;
