@@ -38,7 +38,7 @@ export function Reader() {
   // Query chunks data
   const { data: chunks = [], isLoading: isLoadingChunks } = useQuery<Chunk[]>({
     queryKey: [`/api/manuscripts/${params?.id}/chunks`],
-    enabled: !!params?.id,
+    enabled: !!params?.id && !!manuscript,
   });
 
   // Sync active chunk with URL

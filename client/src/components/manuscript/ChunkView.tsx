@@ -34,29 +34,38 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+interface ImageSettings {
+  seed: number;
+  prompt: string;
+  aspect_ratio: string;
+  image_reference_url: string | null;
+  style_reference_url: string | null;
+  image_reference_weight: number;
+  style_reference_weight: number;
+}
+
+interface Manuscript {
+  id: number;
+  title: string;
+  authorId: string;
+  imageSettings: ImageSettings;
+}
+
+interface Chunk {
+  id: number;
+  manuscriptId: number;
+  headingH1?: string;
+  headingH2?: string;
+  text: string;
+  imageUrl?: string;
+  manuscript: Manuscript;
+}
+
 interface ChunkViewProps {
-  chunk: {
-    id: number;
-    manuscriptId: number;
-    headingH1?: string;
-    headingH2?: string;
-    text: string;
-    imageUrl?: string;
-    manuscript?: {
-      imageSettings: {
-        seed: number;
-        prompt: string;
-        aspect_ratio: string;
-        image_reference_url: string | null;
-        style_reference_url: string | null;
-        image_reference_weight: number;
-        style_reference_weight: number;
-      };
-    };
-  };
+  chunk: Chunk;
   isAuthor: boolean;
   onChunkChange: (chunkId: number) => void;
-  allChunks: Array<any>;
+  allChunks: Chunk[];
 }
 
 export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkViewProps) {
@@ -348,13 +357,13 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                         <ManuscriptImageSettings 
                           manuscriptId={chunk.manuscriptId} 
                           currentSettings={{
-                            seed: manuscript?.imageSettings?.seed ?? 469,
-                            prompt: manuscript?.imageSettings?.prompt ?? "",
-                            aspect_ratio: manuscript?.imageSettings?.aspect_ratio ?? "9:16",
-                            image_reference_url: manuscript?.imageSettings?.image_reference_url ?? "",
-                            style_reference_url: manuscript?.imageSettings?.style_reference_url ?? "",
-                            image_reference_weight: manuscript?.imageSettings?.image_reference_weight ?? 0.85,
-                            style_reference_weight: manuscript?.imageSettings?.style_reference_weight ?? 0.85
+                            seed: chunk.manuscript?.imageSettings?.seed ?? 469,
+                            prompt: chunk.manuscript?.imageSettings?.prompt ?? "",
+                            aspect_ratio: chunk.manuscript?.imageSettings?.aspect_ratio ?? "9:16",
+                            image_reference_url: chunk.manuscript?.imageSettings?.image_reference_url ?? "",
+                            style_reference_url: chunk.manuscript?.imageSettings?.style_reference_url ?? "",
+                            image_reference_weight: chunk.manuscript?.imageSettings?.image_reference_weight ?? 0.85,
+                            style_reference_weight: chunk.manuscript?.imageSettings?.style_reference_weight ?? 0.85
                           }} 
                         />
                       </div>

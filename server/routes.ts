@@ -124,6 +124,14 @@ export function registerRoutes(app: Express): Server {
             },
             limit: 1,
           },
+          manuscript: {
+            columns: {
+              id: true,
+              title: true,
+              authorId: true,
+              imageSettings: true,
+            }
+          }
         },
         orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
       });

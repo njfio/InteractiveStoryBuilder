@@ -1,0 +1,48 @@
+ChunkView.tsx:351 Uncaught ReferenceError: manuscript is not defined
+    at ChunkView (ChunkView.tsx:351:35)
+    at renderWithHooks (chunk-UPELNCPK.js?v=0d2f22e8:11548:26)
+    at mountIndeterminateComponent (chunk-UPELNCPK.js?v=0d2f22e8:14926:21)
+    at beginWork (chunk-UPELNCPK.js?v=0d2f22e8:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-UPELNCPK.js?v=0d2f22e8:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-UPELNCPK.js?v=0d2f22e8:3699:24)
+    at invokeGuardedCallback (chunk-UPELNCPK.js?v=0d2f22e8:3733:39)
+    at beginWork$1 (chunk-UPELNCPK.js?v=0d2f22e8:19765:15)
+    at performUnitOfWork (chunk-UPELNCPK.js?v=0d2f22e8:19198:20)
+    at workLoopSync (chunk-UPELNCPK.js?v=0d2f22e8:19137:13)
+ChunkView.tsx:351 Uncaught ReferenceError: manuscript is not defined
+    at ChunkView (ChunkView.tsx:351:35)
+    at renderWithHooks (chunk-UPELNCPK.js?v=0d2f22e8:11548:26)
+    at mountIndeterminateComponent (chunk-UPELNCPK.js?v=0d2f22e8:14926:21)
+    at beginWork (chunk-UPELNCPK.js?v=0d2f22e8:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-UPELNCPK.js?v=0d2f22e8:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-UPELNCPK.js?v=0d2f22e8:3699:24)
+    at invokeGuardedCallback (chunk-UPELNCPK.js?v=0d2f22e8:3733:39)
+    at beginWork$1 (chunk-UPELNCPK.js?v=0d2f22e8:19765:15)
+    at performUnitOfWork (chunk-UPELNCPK.js?v=0d2f22e8:19198:20)
+    at workLoopSync (chunk-UPELNCPK.js?v=0d2f22e8:19137:13)
+Console.js:61 The above error occurred in the <ChunkView> component:
+
+    at ChunkView (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/components/manuscript/ChunkView.tsx:53:29)
+    at div
+    at div
+    at Reader (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/pages/Reader.tsx:26:22)
+    at Route (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0d2f22e8:323:16)
+    at Switch (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0d2f22e8:379:17)
+    at main
+    at div
+    at App (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/src/App.tsx:29:3)
+    at QueryClientProvider (https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0d2f22e8:2796:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-UPELNCPK.js?v=0d2f22e8:9129 Uncaught ReferenceError: manuscript is not defined
+    at ChunkView (ChunkView.tsx:351:35)
+    at renderWithHooks (chunk-UPELNCPK.js?v=0d2f22e8:11548:26)
+    at mountIndeterminateComponent (chunk-UPELNCPK.js?v=0d2f22e8:14926:21)
+    at beginWork (chunk-UPELNCPK.js?v=0d2f22e8:15914:22)
+    at beginWork$1 (chunk-UPELNCPK.js?v=0d2f22e8:19753:22)
+    at performUnitOfWork (chunk-UPELNCPK.js?v=0d2f22e8:19198:20)
+    at workLoopSync (chunk-UPELNCPK.js?v=0d2f22e8:19137:13)
+    at renderRootSync (chunk-UPELNCPK.js?v=0d2f22e8:19116:15)
+    at recoverFromConcurrentError (chunk-UPELNCPK.js?v=0d2f22e8:18736:28)
+    at performSyncWorkOnRoot (chunk-UPELNCPK.js?v=0d2f22e8:18879:28)
