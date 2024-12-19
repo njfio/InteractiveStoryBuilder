@@ -600,7 +600,16 @@ export function registerRoutes(app: Express): Server {
           
           try {
             await fs.copyFile(sourceImagePath, targetImagePath);
-            content += `![Generated illustration](${join('images', imageFilename!)})\n\n`;
+            if (format === 'markdown') {
+              // For markdown, use the original public URL path
+              content += `![Generated illustration](${window.location.origin + chunk.images[0].localPath})\n\n`;
+            } else if (format === 'docx') {
+              // For DOCX, use relative path that pandoc can resolve
+              content += `![Generated illustration](${join('images', imageFilename!)})\n\n`;
+            } else {
+              // For EPUB, use a path that will work within the EPUB container
+              content += `![Generated illustration](${join('OEBPS/images', imageFilename!)})\n\n`;
+            }
           } catch (err) {
             console.error(`Failed to copy image ${sourceImagePath}:`, err);
             // Continue without the image if it can't be copied
@@ -653,7 +662,7 @@ export function registerRoutes(app: Express): Server {
                 
                 try {
                   await fs.copyFile(sourceImagePath, targetImagePath);
-                  currentChapterContent += `<img src="images/${imageFilename}" alt="Generated illustration"/>`;
+                  currentChapterContent += `<img src="${join('images', imageFilename!)}" alt="Generated illustration" class="chapter-image"/>`;
                 } catch (err) {
                   console.error(`Failed to copy image for EPUB:`, err);
                 }
@@ -668,10 +677,31 @@ export function registerRoutes(app: Express): Server {
               });
             }
 
+            // Create EPUB structure
+            const epubContentDir = join(exportDir, 'OEBPS');
+            const epubImagesDir = join(epubContentDir, 'images');
+            await fs.mkdir(epubContentDir, { recursive: true });
+            await fs.mkdir(epubImagesDir, { recursive: true });
+
+            // Copy images to EPUB content directory
+            for (const chunk of chunksWithImages) {
+              if (chunk.images?.[0]?.localPath) {
+                const sourceImagePath = join(process.cwd(), 'public', chunk.images[0].localPath);
+                const imageFilename = chunk.images[0].localPath.split('/').pop();
+                const epubImagePath = join(epubImagesDir, imageFilename!);
+                try {
+                  await fs.copyFile(sourceImagePath, epubImagePath);
+                } catch (err) {
+                  console.error(`Failed to copy image for EPUB:`, err);
+                }
+              }
+            }
+
             const epub = new EPub({
               title: manuscript.title,
               content: chapters,
-              tempDir: exportDir
+              tempDir: exportDir,
+              contentDir: 'OEBPS'
             }, epubFilePath);
 
             console.log('Generating EPUB file...');
