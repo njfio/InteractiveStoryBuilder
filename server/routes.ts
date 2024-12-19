@@ -608,13 +608,12 @@ export function registerRoutes(app: Express): Server {
           
           try {
             await fs.copyFile(sourceImagePath, targetImagePath);
-            if (format === 'markdown') {
-              // For markdown, use the full URL path with public URL
-              const publicUrl = getPublicUrl(req);
+            // Get public URL once for both markdown and docx
+            const publicUrl = getPublicUrl(req);
+            
+            if (format === 'markdown' || format === 'docx') {
+              // For both markdown and docx, use the full URL path
               content += `![Generated illustration](${publicUrl}${chunk.images[0].localPath})\n\n`;
-            } else if (format === 'docx') {
-              // For DOCX, use relative path that pandoc can resolve
-              content += `![Generated illustration](${join('images', imageFilename!)})\n\n`;
             } else {
               // For EPUB, use a path that will work within the EPUB container
               content += `![Generated illustration](${join('OEBPS/images', imageFilename!)})\n\n`;
