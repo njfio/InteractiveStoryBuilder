@@ -69,9 +69,8 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
         paragraphCount = 0;
         isSpecialSection = false;
         
-        // Update current H1 without creating separate chunk
+        // Update current H1 without including it in the content
         currentH1 = getHeadingText(node).replace(/^\*\*(.*)\*\*$/, '$1').trim();
-        currentText = `# ${currentH1}\n\n`; // Include header in the content
       }
     } else if (node.type === 'paragraph') {
       const paragraphText = getParagraphText(node);
@@ -99,8 +98,19 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
         currentText = '';
         paragraphCount = 0;
       }
+    } else if (node.type === 'text') {
+      // Preserve any standalone text nodes
+      if (currentText && !currentText.endsWith('\n')) {
+        currentText += '\n';
+      }
+      currentText += (node as any).value;
     }
   });
+
+  // Save the final chunk if there's any content
+  if (currentText) {
+    saveChunk(currentText);
+  }
 
   // Save the final chunk if there's any content
   if (currentText) {
@@ -125,13 +135,21 @@ const getHeadingText = (node: Node): string => {
 
 const getParagraphText = (node: Node): string => {
   let text = '';
-  visit(node, 'text', (textNode: { value: string }) => {
-    // Add spaces only between text nodes, not at the end
-    if (text && !text.endsWith(' ')) {
-      text += ' ';
+  let lastNode: any;
+  
+  visit(node, (childNode: any) => {
+    if (childNode.type === 'text') {
+      // Add space between text nodes if needed
+      if (text && !text.endsWith(' ') && !childNode.value.startsWith(' ')) {
+        text += ' ';
+      }
+      text += childNode.value;
+    } else if (childNode.type === 'break') {
+      text += '\n';
     }
-    text += textNode.value;
+    lastNode = childNode;
   });
+
   return text;
 };
 
