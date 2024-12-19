@@ -42,7 +42,15 @@ export function ManuscriptImageSettings({ manuscriptId, currentSettings }: Manus
 
   const form = useForm<ImageSettings>({
     resolver: zodResolver(imageSettingsSchema),
-    defaultValues: currentSettings,
+    defaultValues: {
+      seed: currentSettings.seed,
+      prompt: currentSettings.prompt || "",
+      aspect_ratio: currentSettings.aspect_ratio || "9:16",
+      image_reference_url: currentSettings.image_reference_url || "",
+      style_reference_url: currentSettings.style_reference_url || "",
+      image_reference_weight: currentSettings.image_reference_weight || 0.85,
+      style_reference_weight: currentSettings.style_reference_weight || 0.85
+    },
   });
 
   const onSubmit = async (values: ImageSettings) => {

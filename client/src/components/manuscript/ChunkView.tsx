@@ -347,14 +347,14 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                         />
                         <ManuscriptImageSettings 
                           manuscriptId={chunk.manuscriptId} 
-                          currentSettings={chunk.manuscript?.imageSettings || {
-                            seed: 469,
-                            prompt: "",
-                            aspect_ratio: "9:16",
-                            image_reference_url: null,
-                            style_reference_url: null,
-                            image_reference_weight: 0.85,
-                            style_reference_weight: 0.85
+                          currentSettings={{
+                            seed: chunk.manuscript?.imageSettings?.seed ?? 469,
+                            prompt: chunk.manuscript?.imageSettings?.prompt ?? "",
+                            aspect_ratio: chunk.manuscript?.imageSettings?.aspect_ratio ?? "9:16",
+                            image_reference_url: chunk.manuscript?.imageSettings?.image_reference_url ?? null,
+                            style_reference_url: chunk.manuscript?.imageSettings?.style_reference_url ?? null,
+                            image_reference_weight: chunk.manuscript?.imageSettings?.image_reference_weight ?? 0.85,
+                            style_reference_weight: chunk.manuscript?.imageSettings?.style_reference_weight ?? 0.85
                           }} 
                         />
                       </div>
