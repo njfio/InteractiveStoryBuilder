@@ -22,97 +22,80 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
 
   // Split markdown into lines for exact preservation
   const lines = markdown.split('\n');
-  let currentChunkLines: string[] = [];
-  let contentLineCount = 0;
 
-  // Track nodes and their positions
-  const nodePositions: Array<{ 
-    node: Node, 
-    start: number, 
-    end: number 
-  }> = [];
+  // Track current chunk building
+  let currentChunk: string[] = [];
+  let lastNodeWasHeading = false;
 
-  // First pass: collect all node positions
-  visit(ast, (node: any) => {
-    if (node.position) {
-      nodePositions.push({
-        node,
-        start: node.position.start.line - 1, // Convert to 0-based index
-        end: node.position.end.line - 1
-      });
-    }
-  });
+  // Function to save current chunk if it contains content
+  const saveChunk = () => {
+    if (currentChunk.length === 0) return;
 
-  const saveChunk = (force = false) => {
-    if (currentChunkLines.length === 0) return;
-
-    // Count actual content lines (non-empty, non-whitespace)
-    const contentLines = currentChunkLines.filter(line => line.trim()).length;
-
-    // Only save chunks with enough content unless forced
-    if (contentLines >= 4 || force) {
-      // Preserve exact whitespace at chunk boundaries
-      const text = currentChunkLines.join('\n');
+    const text = currentChunk.join('\n');
+    if (text.trim()) {
       chunks.push({
         headingH1: currentH1,
         text,
         order: chunkOrder++
       });
     }
-
-    currentChunkLines = [];
-    contentLineCount = 0;
+    currentChunk = [];
+    lastNodeWasHeading = false;
   };
 
-  // Process nodes in order of appearance
-  nodePositions.sort((a, b) => a.start - b.start);
+  // Process each node in document order
+  visit(ast, (node: any, index: number, parent: any) => {
+    // Skip if we're inside a heading (to avoid duplicate content)
+    if (parent?.type === 'heading') return;
 
-  for (let i = 0; i < nodePositions.length; i++) {
-    const { node, start, end } = nodePositions[i];
-
-    // Handle H1 headers specially
-    if (node.type === 'heading' && node.depth === 1) {
-      // Save current chunk before new section
-      saveChunk();
-
-      // Update current H1 while preserving original formatting
-      const headerLines = lines.slice(start, end + 1);
-      currentH1 = headerLines.join('\n').replace(/^#+ /, '').trim();
-
-      continue;
-    }
-
-    // Special handling for list structures
-    if (node.type === 'list') {
-      // Include the entire list as one unit
-      const listLines = lines.slice(start, end + 1);
-      currentChunkLines.push(...listLines);
-      contentLineCount += listLines.filter(line => line.trim()).length;
-
-      // Check if we should create a new chunk
-      if (contentLineCount >= 4) {
+    if (node.type === 'heading') {
+      // Always start a new chunk at a heading
+      if (!lastNodeWasHeading) {
         saveChunk();
       }
-      continue;
-    }
 
-    // For all other nodes
-    if (node.position) {
-      const nodeLines = lines.slice(start, end + 1);
+      // Get the original heading text with markdown syntax
+      const headingLines = lines.slice(
+        node.position.start.line - 1,
+        node.position.end.line
+      );
 
-      // Add lines to current chunk
-      currentChunkLines.push(...nodeLines);
-      contentLineCount += nodeLines.filter(line => line.trim()).length;
+      // For H1, update the current H1 and don't include in chunk
+      if (node.depth === 1) {
+        currentH1 = node.children
+          .map((child: any) => child.value)
+          .join('')
+          .trim();
+        lastNodeWasHeading = false;
+        return;
+      }
 
-      // Check for chunk boundary
-      if (contentLineCount >= 4 && node.type === 'paragraph') {
+      // For other headings, include in chunk
+      currentChunk.push(...headingLines);
+      lastNodeWasHeading = true;
+    } else if (node.type === 'paragraph' || node.type === 'list') {
+      // Get the original text with exact formatting
+      const contentLines = lines.slice(
+        node.position.start.line - 1,
+        node.position.end.line
+      );
+
+      // Add proper spacing
+      if (currentChunk.length > 0 && !lastNodeWasHeading) {
+        currentChunk.push('');  // Add blank line between paragraphs
+      }
+
+      currentChunk.push(...contentLines);
+
+      // If this was after a heading, save the chunk
+      if (lastNodeWasHeading) {
         saveChunk();
       }
     }
-  }
+  });
 
   // Save any remaining content
-  saveChunk(true);
+  saveChunk();
 
   return chunks;
 };
