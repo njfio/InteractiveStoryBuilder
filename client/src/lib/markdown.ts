@@ -29,11 +29,12 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
   };
 
   const saveChunk = (text: string, force: boolean = false) => {
-    const trimmedText = text.trim();
+    // Preserve whitespace but remove leading/trailing empty lines
+    const trimmedText = text.replace(/^\n+|\n+$/g, '');
     if (!trimmedText) return;
 
     // Rule 7: Don't create single-line chunks unless it's a heading
-    if (!force && trimmedText.split('\n').length === 1 && !currentH1) return;
+    if (!force && trimmedText.split('\n').filter(line => line.trim()).length === 1 && !currentH1) return;
 
     chunks.push({
       headingH1: currentH1,
@@ -83,8 +84,12 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
         isSpecialSection = true;
       }
 
-      // Add paragraph to current chunk
-      if (currentText) currentText += '\n\n';
+      // Add paragraph to current chunk with proper formatting
+      if (currentText) {
+        // Ensure double newline between paragraphs
+        currentText += '\n\n';
+      }
+      // Preserve the original paragraph text with its formatting
       currentText += paragraphText;
       paragraphCount++;
 
