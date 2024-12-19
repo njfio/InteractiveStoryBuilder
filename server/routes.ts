@@ -101,19 +101,40 @@ export function registerRoutes(app: Express): Server {
     res.json(manuscript);
   });
 
-  app.delete('/api/manuscripts/:id', async (req, res) => {
-    const user = req.user as any;
-    if (!user) return res.status(401).send('Unauthorized');
+  app.delete('/api/manuscripts/:id', requireAuth, async (req, res) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
 
-    const manuscript = await db.query.manuscripts.findFirst({
-      where: eq(manuscripts.id, parseInt(req.params.id)),
-    });
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.id)),
+        columns: {
+          id: true,
+          authorId: true
+        }
+      });
 
-    if (!manuscript) return res.status(404).send('Manuscript not found');
-    if (manuscript.authorId !== user.id) return res.status(403).send('Forbidden');
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
 
-    await db.delete(manuscripts).where(eq(manuscripts.id, manuscript.id));
-    res.status(204).end();
+      if (manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden - you can only delete your own manuscripts' });
+      }
+
+      // Delete the manuscript - cascade will handle related records
+      await db.delete(manuscripts)
+        .where(eq(manuscripts.id, manuscript.id));
+
+      res.status(204).end();
+    } catch (error) {
+      console.error('Error deleting manuscript:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Failed to delete manuscript' 
+      });
+    }
   });
 
   // Chunks
@@ -645,7 +666,7 @@ export function registerRoutes(app: Express): Server {
             let currentChapterContent = '';
             let chapters = [];
             let lastChapter = null;
-
+            
             for (const chunk of chunksWithImages) {
               if (chunk.headingH1 && chunk.headingH1 !== lastChapter) {
                 if (lastChapter) {
@@ -657,15 +678,15 @@ export function registerRoutes(app: Express): Server {
                 }
                 lastChapter = chunk.headingH1;
               }
-
+              
               if (chunk.headingH2 && chunk.headingH2 !== chunk.text) {
                 currentChapterContent += `<h2>${chunk.headingH2}</h2>\n`;
               }
-
+              
               if (chunk.text !== chunk.headingH1 && chunk.text !== chunk.headingH2) {
                 currentChapterContent += `<p>${chunk.text}</p>\n`;
               }
-
+              
               if (chunk.images?.[0]?.localPath) {
                 const sourceImagePath = join(process.cwd(), 'public', chunk.images[0].localPath);
                 const imageFilename = chunk.images[0].localPath.split('/').pop();
@@ -679,7 +700,7 @@ export function registerRoutes(app: Express): Server {
                 }
               }
             }
-
+            
             // Add the last chapter
             if (lastChapter && currentChapterContent) {
               chapters.push({
@@ -687,13 +708,13 @@ export function registerRoutes(app: Express): Server {
                 data: currentChapterContent
               });
             }
-
+            
             // Create EPUB structure
             const epubContentDir = join(exportDir, 'OEBPS');
             const epubImagesDir = join(epubContentDir, 'images');
             await fs.mkdir(epubContentDir, { recursive: true });
             await fs.mkdir(epubImagesDir, { recursive: true });
-
+            
             // Copy images to EPUB content directory
             for (const chunk of chunksWithImages) {
               if (chunk.images?.[0]?.localPath) {
@@ -707,18 +728,18 @@ export function registerRoutes(app: Express): Server {
                 }
               }
             }
-
+            
             const epub = new EPub({
               title: manuscript.title,
               content: chapters,
               tempDir: exportDir,
               contentDir: 'OEBPS'
             }, epubFilePath);
-
+            
             console.log('Generating EPUB file...');
             await epub.promise;
             console.log('EPUB generation completed successfully');
-
+            
             res.download(epubFilePath, `${sanitizedTitle}.epub`, () => {
               console.log('EPUB download completed, cleaning up...');
               cleanupFiles(exportDir, epubFilePath);

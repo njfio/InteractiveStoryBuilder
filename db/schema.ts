@@ -31,7 +31,6 @@ export const chunks = pgTable("chunks", {
   manuscriptId: integer("manuscript_id").notNull().references(() => manuscripts.id, { onDelete: 'cascade' }),
   chunkOrder: integer("chunk_order").notNull(),
   headingH1: text("heading_h1"),
-  headingH2: text("heading_h2"),
   text: text("text").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -76,10 +75,7 @@ export const chunkRelations = relations(chunks, ({ one, many }) => ({
     fields: [chunks.manuscriptId],
     references: [manuscripts.id],
   }),
-  images: many(images, {
-    fields: [chunks.id],
-    references: [images.chunkId],
-  }),
+  images: many(images),
   seoMetadata: many(seoMetadata),
 }));
 
@@ -93,16 +89,6 @@ export const imageRelations = relations(images, ({ one }) => ({
     references: [manuscripts.id],
   }),
 }));
-
-// Schemas for validation
-export const insertManuscriptSchema = createInsertSchema(manuscripts);
-export const selectManuscriptSchema = createSelectSchema(manuscripts);
-export const insertChunkSchema = createInsertSchema(chunks);
-export const selectChunkSchema = createSelectSchema(chunks);
-export const insertImageSchema = createInsertSchema(images);
-export const selectImageSchema = createSelectSchema(images);
-export const insertSeoSchema = createInsertSchema(seoMetadata);
-export const selectSeoSchema = createSelectSchema(seoMetadata);
 
 // Types
 export type Manuscript = typeof manuscripts.$inferSelect;

@@ -16,7 +16,7 @@ export async function requireAuth(
   next: NextFunction
 ) {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader) {
     return res.status(401).json({ message: 'No authorization header' });
   }
@@ -29,13 +29,20 @@ export async function requireAuth(
       throw error || new Error('User not found');
     }
 
+    // Attach user info to request
     req.user = {
       id: user.id,
       email: user.email || ''
     };
+
+    // Add token to request for downstream use
+    req.headers['supabase-auth-token'] = token;
+
     next();
   } catch (error) {
     console.error('Auth error:', error);
-    return res.status(401).json({ message: 'Invalid token' });
+    return res.status(401).json({ 
+      message: error instanceof Error ? error.message : 'Invalid token'
+    });
   }
 }
