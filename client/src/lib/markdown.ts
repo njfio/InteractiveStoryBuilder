@@ -33,10 +33,10 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
     const trimmedText = text.replace(/^\n+|\n+$/g, '');
     if (!trimmedText) return;
 
-    // Rule 7: Don't create single-line chunks unless it's a heading or forced
+    // Rule 7: Don't create single-line chunks unless it's a heading
     if (!force && trimmedText.split('\n').filter(line => line.trim()).length === 1 && !currentH1) return;
 
-    // Rule 4: Avoid over-fragmentation - don't create tiny chunks
+    // Rule 4: Avoid over-fragmentation
     if (!force && trimmedText.split('\n\n').length < 2) return;
 
     chunks.push({
@@ -44,16 +44,6 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
       text: trimmedText,
       order: chunkOrder++
     });
-  };
-
-  const shouldStartNewChunk = (): boolean => {
-    // Rule 2: Each chunk should have 4-6 paragraphs max
-    if (paragraphCount >= 5) return true;
-    
-    // Rule 3: Special sections should stay intact
-    if (isSpecialSection) return false;
-
-    return false;
   };
 
   visit(ast, (node: Node) => {
@@ -76,40 +66,43 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
       const paragraphText = getParagraphText(node);
       
       // Rule 3: Check for activity or summary sections
-      if (!isSpecialSection && isActivityOrSummary(paragraphText)) {
+      if (!isActivityOrSummary(paragraphText)) {
+        if (currentText) {
+          currentText += '\n\n';
+        }
+        currentText += paragraphText;
+        paragraphCount++;
+
+        // Rule 2: Each chunk should have 4-6 paragraphs
+        if (!isSpecialSection && paragraphCount >= 5) {
+          saveChunk(currentText);
+          currentText = '';
+          paragraphCount = 0;
+        }
+      } else {
+        // Save current content before starting special section
         if (currentText) {
           saveChunk(currentText);
         }
-        currentText = '';
-        paragraphCount = 0;
+        currentText = paragraphText;
         isSpecialSection = true;
       }
-
-      // Add paragraph to current chunk with proper formatting
-      if (currentText && !currentText.endsWith('\n\n')) {
-        currentText += '\n\n';
-      }
-      currentText += paragraphText;
-      paragraphCount++;
-
-      // Rule 2: Each chunk should have 4-6 paragraphs
-      if (!isSpecialSection && paragraphCount >= 5) {
-        saveChunk(currentText);
-        currentText = '';
-        paragraphCount = 0;
-      }
-    } else if (node.type === 'text') {
-      // Preserve any standalone text nodes
+    } else if (node.type === 'text' || node.type === 'break') {
+      // Preserve standalone text nodes and line breaks
       if (currentText && !currentText.endsWith('\n')) {
         currentText += '\n';
       }
-      currentText += (node as any).value;
+      if (node.type === 'text') {
+        currentText += (node as any).value;
+      } else {
+        currentText += '\n';
+      }
     }
   });
 
   // Save the final chunk if there's any content
   if (currentText) {
-    saveChunk(currentText);
+    saveChunk(currentText, true);
   }
 
   return chunks;
