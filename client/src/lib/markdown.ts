@@ -20,12 +20,15 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
   let chunkOrder = 0;
   let currentH1: string | undefined;
   let currentText = '';
-  let paragraphCount = 0;
-  let isSpecialSection = false;
+  let lineCount = 0;
 
   const isActivityOrSummary = (text: string): boolean => {
     const keywords = ['Activity', 'Summary', 'Exercise'];
     return keywords.some(keyword => text.startsWith(keyword));
+  };
+
+  const countTextLines = (text: string): number => {
+    return text.split('\n').filter(line => line.trim()).length;
   };
 
   const saveChunk = (text: string, force: boolean = false) => {
@@ -33,11 +36,8 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
     const trimmedText = text.replace(/^\n+|\n+$/g, '');
     if (!trimmedText) return;
 
-    // Rule 7: Don't create single-line chunks unless it's a heading
-    if (!force && trimmedText.split('\n').filter(line => line.trim()).length === 1 && !currentH1) return;
-
-    // Rule 4: Avoid over-fragmentation
-    if (!force && trimmedText.split('\n\n').length < 2) return;
+    // Don't create chunks with less than 4 lines unless forced
+    if (!force && countTextLines(trimmedText) < 4) return;
 
     chunks.push({
       headingH1: currentH1,
@@ -50,42 +50,43 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
     if (node.type === 'heading' && 'depth' in node) {
       if (node.depth === 1) {
         // Save existing content before starting new section
-        if (currentText) {
+        if (currentText && countTextLines(currentText) >= 4) {
           saveChunk(currentText);
         }
         
         // Reset state for new section
         currentText = '';
-        paragraphCount = 0;
-        isSpecialSection = false;
+        lineCount = 0;
         
         // Update current H1 without including it in the content
         currentH1 = getHeadingText(node).replace(/^\*\*(.*)\*\*$/, '$1').trim();
       }
     } else if (node.type === 'paragraph') {
       const paragraphText = getParagraphText(node);
+      const paragraphLines = countTextLines(paragraphText);
       
-      // Rule 3: Check for activity or summary sections
-      if (!isActivityOrSummary(paragraphText)) {
-        if (currentText) {
-          currentText += '\n\n';
-        }
-        currentText += paragraphText;
-        paragraphCount++;
-
-        // Rule 2: Each chunk should have 4-6 paragraphs
-        if (!isSpecialSection && paragraphCount >= 5) {
-          saveChunk(currentText);
-          currentText = '';
-          paragraphCount = 0;
-        }
-      } else {
-        // Save current content before starting special section
+      // Special sections should stay together
+      if (isActivityOrSummary(paragraphText)) {
         if (currentText) {
           saveChunk(currentText);
         }
         currentText = paragraphText;
-        isSpecialSection = true;
+        lineCount = paragraphLines;
+        return;
+      }
+
+      // Add paragraph to current chunk with proper formatting
+      if (currentText) {
+        currentText += '\n\n';
+      }
+      currentText += paragraphText;
+      lineCount += paragraphLines;
+
+      // Create a new chunk if we have enough lines
+      if (lineCount >= 4) {
+        saveChunk(currentText);
+        currentText = '';
+        lineCount = 0;
       }
     } else if (node.type === 'text' || node.type === 'break') {
       // Preserve standalone text nodes and line breaks
@@ -94,6 +95,7 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
       }
       if (node.type === 'text') {
         currentText += (node as any).value;
+        lineCount += countTextLines((node as any).value);
       } else {
         currentText += '\n';
       }
