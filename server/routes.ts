@@ -550,6 +550,11 @@ export function registerRoutes(app: Express): Server {
         await fs.mkdir(tmpDir, { recursive: true });
       }
 
+      // Create a temporary directory for the export
+      const exportDir = join(tmpDir, `export-${Date.now()}`);
+      await fs.mkdir(exportDir, { recursive: true });
+      await fs.mkdir(join(exportDir, 'images'), { recursive: true });
+
       // Clean up function for temporary files
       const cleanupFiles = async (...files: string[]) => {
         console.log('Cleaning up temporary files:', files);
@@ -566,31 +571,36 @@ export function registerRoutes(app: Express): Server {
       const sanitizedTitle = manuscript.title.replace(/[^a-zA-Z0-9]/g, '_');
       console.log(`Preparing to export manuscript "${manuscript.title}" in ${format} format`);
 
-      // Create a temporary directory for the export
-      const exportDir = join(tmpDir, `export-${Date.now()}`);
-      await fs.mkdir(exportDir, { recursive: true });
-      await fs.mkdir(join(exportDir, 'images'), { recursive: true });
-
       // Compile content from chunks
       let content = `# ${manuscript.title}\n\n`;
+      let currentChapter: string | null = null;
+      
       for (const chunk of chunksWithImages) {
-        if (chunk.headingH1) {
+        // Only add chapter heading if it's different from the current one
+        if (chunk.headingH1 && chunk.headingH1 !== currentChapter) {
           content += `# ${chunk.headingH1}\n\n`;
+          currentChapter = chunk.headingH1;
         }
-        if (chunk.headingH2) {
+        
+        // Add subheading if present
+        if (chunk.headingH2 && chunk.headingH2 !== chunk.text) {
           content += `## ${chunk.headingH2}\n\n`;
         }
-        content += chunk.text + '\n\n';
         
-        // Copy image if exists and update the path
+        // Add the chunk text, but skip if it matches the heading
+        if (chunk.text !== chunk.headingH1 && chunk.text !== chunk.headingH2) {
+          content += `${chunk.text}\n\n`;
+        }
+        
+        // Handle image if exists
         if (chunk.images?.[0]?.localPath) {
-          const sourceImagePath = join(process.cwd(), chunk.images[0].localPath);
+          const sourceImagePath = join(process.cwd(), 'public', chunk.images[0].localPath);
           const imageFilename = chunk.images[0].localPath.split('/').pop();
           const targetImagePath = join(exportDir, 'images', imageFilename!);
           
           try {
             await fs.copyFile(sourceImagePath, targetImagePath);
-            content += `![Generated illustration](images/${imageFilename})\n\n`;
+            content += `![Generated illustration](${join('images', imageFilename!)})\n\n`;
           } catch (err) {
             console.error(`Failed to copy image ${sourceImagePath}:`, err);
             // Continue without the image if it can't be copied
@@ -611,33 +621,57 @@ export function registerRoutes(app: Express): Server {
           
           try {
             console.log('Configuring EPUB generator...');
-            // Prepare EPUB content with images
-            const epubContent = chunksWithImages.map(chunk => {
-              let chapterContent = '';
-              if (chunk.headingH1) {
-                chapterContent += `<h1>${chunk.headingH1}</h1>\n`;
-              }
-              if (chunk.headingH2) {
-                chapterContent += `<h2>${chunk.headingH2}</h2>\n`;
-              }
-              chapterContent += `<p>${chunk.text}</p>\n`;
-              
-              if (chunk.images?.[0]?.localPath) {
-                const imagePath = chunk.images[0].localPath;
-                const imageFilename = imagePath.split('/').pop();
-                chapterContent += `<img src="images/${imageFilename}" alt="Generated illustration"/>`;
+            // Group chunks by chapter for EPUB
+            let currentChapterContent = '';
+            let chapters = [];
+            let lastChapter = null;
+
+            for (const chunk of chunksWithImages) {
+              if (chunk.headingH1 && chunk.headingH1 !== lastChapter) {
+                if (lastChapter) {
+                  chapters.push({
+                    title: lastChapter,
+                    data: currentChapterContent
+                  });
+                  currentChapterContent = '';
+                }
+                lastChapter = chunk.headingH1;
               }
 
-              return {
-                title: chunk.headingH1 || 'Chapter',
-                data: chapterContent
-              };
-            });
+              if (chunk.headingH2 && chunk.headingH2 !== chunk.text) {
+                currentChapterContent += `<h2>${chunk.headingH2}</h2>\n`;
+              }
+
+              if (chunk.text !== chunk.headingH1 && chunk.text !== chunk.headingH2) {
+                currentChapterContent += `<p>${chunk.text}</p>\n`;
+              }
+
+              if (chunk.images?.[0]?.localPath) {
+                const sourceImagePath = join(process.cwd(), 'public', chunk.images[0].localPath);
+                const imageFilename = chunk.images[0].localPath.split('/').pop();
+                const targetImagePath = join(exportDir, 'images', imageFilename!);
+                
+                try {
+                  await fs.copyFile(sourceImagePath, targetImagePath);
+                  currentChapterContent += `<img src="images/${imageFilename}" alt="Generated illustration"/>`;
+                } catch (err) {
+                  console.error(`Failed to copy image for EPUB:`, err);
+                }
+              }
+            }
+
+            // Add the last chapter
+            if (lastChapter && currentChapterContent) {
+              chapters.push({
+                title: lastChapter,
+                data: currentChapterContent
+              });
+            }
 
             const epub = new EPub({
               title: manuscript.title,
-              content: epubContent,
-              tempDir: tmpDir
+              content: chapters,
+              tempDir: exportDir
             }, epubFilePath);
 
             console.log('Generating EPUB file...');
@@ -646,10 +680,11 @@ export function registerRoutes(app: Express): Server {
 
             res.download(epubFilePath, `${sanitizedTitle}.epub`, () => {
               console.log('EPUB download completed, cleaning up...');
-              cleanupFiles(epubFilePath);
+              cleanupFiles(exportDir, epubFilePath);
             });
           } catch (error) {
             console.error('EPUB generation error:', error);
+            await cleanupFiles(exportDir);
             throw new Error('Failed to generate EPUB');
           }
           break;
@@ -664,8 +699,8 @@ export function registerRoutes(app: Express): Server {
             await fs.writeFile(inputFile, content);
             
             console.log('Converting markdown to DOCX using pandoc with images...');
-            // Use pandoc with the correct working directory
-            await execAsync(`cd "${exportDir}" && pandoc -f markdown -t docx "${sanitizedTitle}.md" -o "${sanitizedTitle}.docx"`);
+            // Use pandoc with the correct working directory to ensure images are found
+            await execAsync(`cd "${exportDir}" && pandoc "${sanitizedTitle}.md" -o "${sanitizedTitle}.docx" --embed-resources --standalone`);
             console.log('DOCX conversion completed successfully');
             
             res.download(outputFile, `${sanitizedTitle}.docx`, () => {
