@@ -611,9 +611,12 @@ export function registerRoutes(app: Express): Server {
             // Get public URL once for both markdown and docx
             const publicUrl = getPublicUrl(req);
             
-            if (format === 'markdown' || format === 'docx') {
-              // For both markdown and docx, use the full URL path
+            if (format === 'markdown') {
+              // For markdown, use the full URL path
               content += `![Generated illustration](${publicUrl}${chunk.images[0].localPath})\n\n`;
+            } else if (format === 'docx') {
+              // For Word, use relative path to keep file size small
+              content += `![Generated illustration](${join('./images', imageFilename!)})\n\n`;
             } else {
               // For EPUB, use a path that will work within the EPUB container
               content += `![Generated illustration](${join('OEBPS/images', imageFilename!)})\n\n`;
@@ -738,7 +741,7 @@ export function registerRoutes(app: Express): Server {
             
             console.log('Converting markdown to DOCX using pandoc with images...');
             // Use pandoc with the correct working directory to ensure images are found
-            await execAsync(`cd "${exportDir}" && pandoc "${sanitizedTitle}.md" -o "${sanitizedTitle}.docx" --embed-resources --standalone`);
+            await execAsync(`cd "${exportDir}" && pandoc "${sanitizedTitle}.md" -o "${sanitizedTitle}.docx" --standalone`);
             console.log('DOCX conversion completed successfully');
             
             res.download(outputFile, `${sanitizedTitle}.docx`, () => {
