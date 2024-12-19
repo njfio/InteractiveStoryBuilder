@@ -1,0 +1,23 @@
+Generic Chunking Rules:
+	1.	Chunk Size Target:
+	•	Aim for 3–5 chunks per major section (e.g., per chapter or top-level heading).
+	•	Each chunk should contain at least one paragraph and generally not exceed 4–6 paragraphs.
+	2.	Chunk Boundaries:
+	•	Never split a chunk in the middle of a heading line.
+	•	Attempt to end chunks cleanly at the end of a paragraph.
+	•	If a heading (H1, H2, etc.) is encountered, close the current chunk before starting the new heading’s content (unless the current chunk is empty).
+	3.	Special Sections:
+	•	Keep activity, summary, or callout sections intact in a single chunk. For example, if you detect keywords like “Activity,” “Summary,” or “Exercise” that start a distinct section, place that entire section in one chunk.
+	•	If a list, table, or code block starts, do not split it across chunks. Include the whole list or table in the same chunk.
+	4.	Minimal Over-Fragmentation:
+	•	If a chunk would end up being only a single short paragraph followed by a heading, consider merging it with the next paragraph to maintain more balanced chunk sizes.
+	•	Avoid ending a chunk immediately before a short paragraph. Instead, try to include that short paragraph in the same chunk unless it violates other rules.
+	5.	Fallback for Very Short Sections:
+	•	If a chapter or section is very short (e.g., 2–3 paragraphs total), keep it as one single chunk rather than forcing multiple chunks.
+	6.	Consistent Handling of Hierarchies:
+	•	On encountering a top-level heading (e.g., Chapter heading), start a new chunk.
+	•	For subheadings, try to create a new chunk for each subheading and its associated paragraphs, unless the subheading contains only a very small amount of text, in which case it can be combined with adjacent text.
+	7.	No Single-Line Chunks (Unless Necessary):
+	•	Avoid creating chunks that contain only a single heading line and no paragraphs unless the heading stands alone meaningfully (e.g., a standalone title page or a single-line quote).
+	8.	Length Considerations:
+	•	Ideally, each chunk should represent a cohesive idea or topic segment, rather than a strictly uniform paragraph count. Slight variations in length are acceptable if they improve thematic coherence.
