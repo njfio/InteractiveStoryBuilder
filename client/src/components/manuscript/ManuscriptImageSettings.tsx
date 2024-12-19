@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,16 +42,22 @@ export function ManuscriptImageSettings({ manuscriptId, currentSettings }: Manus
 
   const form = useForm<ImageSettings>({
     resolver: zodResolver(imageSettingsSchema),
-    defaultValues: {
+    defaultValues: currentSettings,
+    values: currentSettings,
+  });
+
+  // Reset form when settings change
+  useEffect(() => {
+    form.reset({
       seed: currentSettings.seed,
       prompt: currentSettings.prompt,
       aspect_ratio: currentSettings.aspect_ratio,
-      image_reference_url: currentSettings.image_reference_url || "",
-      style_reference_url: currentSettings.style_reference_url || "",
+      image_reference_url: currentSettings.image_reference_url,
+      style_reference_url: currentSettings.style_reference_url,
       image_reference_weight: currentSettings.image_reference_weight,
       style_reference_weight: currentSettings.style_reference_weight,
-    },
-  });
+    });
+  }, [currentSettings, form]);
 
   const onSubmit = async (values: ImageSettings) => {
     setIsSaving(true);

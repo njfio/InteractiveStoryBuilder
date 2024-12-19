@@ -42,6 +42,13 @@ export function registerRoutes(app: Express): Server {
       with: {
         author: true,
       },
+      columns: {
+        id: true,
+        title: true,
+        authorId: true,
+        imageSettings: true,
+        updatedAt: true,
+      },
     });
     if (!result) return res.status(404).send('Manuscript not found');
     res.json(result);
