@@ -601,8 +601,8 @@ export function registerRoutes(app: Express): Server {
           try {
             await fs.copyFile(sourceImagePath, targetImagePath);
             if (format === 'markdown') {
-              // For markdown, use the original public URL path
-              content += `![Generated illustration](${window.location.origin + chunk.images[0].localPath})\n\n`;
+              // For markdown, use the full path relative to project root
+              content += `![Generated illustration](${chunk.images[0].localPath})\n\n`;
             } else if (format === 'docx') {
               // For DOCX, use relative path that pandoc can resolve
               content += `![Generated illustration](${join('images', imageFilename!)})\n\n`;
@@ -662,7 +662,7 @@ export function registerRoutes(app: Express): Server {
                 
                 try {
                   await fs.copyFile(sourceImagePath, targetImagePath);
-                  currentChapterContent += `<img src="${join('images', imageFilename!)}" alt="Generated illustration" class="chapter-image"/>`;
+                  currentChapterContent += `<img src="../images/${imageFilename}" alt="Generated illustration" class="chapter-image"/>`;
                 } catch (err) {
                   console.error(`Failed to copy image for EPUB:`, err);
                 }
