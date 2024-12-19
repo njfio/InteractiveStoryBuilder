@@ -3,6 +3,11 @@ import { createServer, type Server } from 'http';
 import { db } from '@db';
 import { manuscripts, chunks, images, seoMetadata, users } from '@db/schema';
 import { createClient } from '@supabase/supabase-js';
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import EPub from 'epub-gen';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -522,22 +527,27 @@ export function registerRoutes(app: Express): Server {
         orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
       });
       
-      // We're not using chunks currently, but keeping the query for future use
-      // Ensure tmp directory exists
-      const fs = require('fs/promises');
-      const path = require('path');
+      console.log('Starting manuscript export process...');
+      
+      const execAsync = promisify(exec);
       const tmpDir = '/tmp';
+
+      console.log('Ensuring tmp directory exists...');
       try {
         await fs.access(tmpDir);
+        console.log('Tmp directory exists');
       } catch {
+        console.log('Creating tmp directory...');
         await fs.mkdir(tmpDir, { recursive: true });
       }
 
       // Clean up function for temporary files
       const cleanupFiles = async (...files: string[]) => {
+        console.log('Cleaning up temporary files:', files);
         for (const file of files) {
           try {
             await fs.unlink(file);
+            console.log(`Successfully deleted temporary file: ${file}`);
           } catch (err) {
             console.error(`Failed to cleanup file ${file}:`, err);
           }
@@ -546,28 +556,36 @@ export function registerRoutes(app: Express): Server {
 
       const content = manuscript.originalMarkdown;
       const sanitizedTitle = manuscript.title.replace(/[^a-zA-Z0-9]/g, '_');
+      console.log(`Preparing to export manuscript "${manuscript.title}" in ${format} format`);
 
       switch (format) {
         case 'markdown':
+          console.log('Exporting as Markdown...');
           res.set('Content-Type', 'text/markdown');
           res.set('Content-Disposition', `attachment; filename="${sanitizedTitle}.md"`);
           return res.send(content);
 
         case 'epub':
-          const EPub = require('epub-gen');
-          const epubFilePath = path.join(tmpDir, `${sanitizedTitle}.epub`);
+          console.log('Starting EPUB generation...');
+          const epubFilePath = join(tmpDir, `${sanitizedTitle}.epub`);
           
           try {
-            await new EPub({
+            console.log('Configuring EPUB generator...');
+            const epub = new EPub({
               title: manuscript.title,
               content: [{
                 title: manuscript.title,
                 data: content
               }],
               tempDir: tmpDir
-            }, epubFilePath).promise;
+            }, epubFilePath);
+
+            console.log('Generating EPUB file...');
+            await epub.promise;
+            console.log('EPUB generation completed successfully');
 
             res.download(epubFilePath, `${sanitizedTitle}.epub`, () => {
+              console.log('EPUB download completed, cleaning up...');
               cleanupFiles(epubFilePath);
             });
           } catch (error) {
@@ -577,23 +595,25 @@ export function registerRoutes(app: Express): Server {
           break;
 
         case 'docx':
-          const { exec } = require('child_process');
-          const util = require('util');
-          const execAsync = util.promisify(exec);
-          
-          const inputFile = path.join(tmpDir, `${sanitizedTitle}.md`);
-          const outputFile = path.join(tmpDir, `${sanitizedTitle}.docx`);
+          console.log('Starting DOCX conversion...');
+          const inputFile = join(tmpDir, `${sanitizedTitle}.md`);
+          const outputFile = join(tmpDir, `${sanitizedTitle}.docx`);
           
           try {
+            console.log('Writing markdown content to temporary file...');
             await fs.writeFile(inputFile, content);
+            
+            console.log('Converting markdown to DOCX using pandoc...');
             await execAsync(`pandoc -f markdown -t docx "${inputFile}" -o "${outputFile}"`);
+            console.log('DOCX conversion completed successfully');
             
             res.download(outputFile, `${sanitizedTitle}.docx`, () => {
+              console.log('DOCX download completed, cleaning up...');
               cleanupFiles(inputFile, outputFile);
             });
           } catch (error) {
-            await cleanupFiles(inputFile, outputFile);
             console.error('DOCX conversion error:', error);
+            await cleanupFiles(inputFile, outputFile);
             throw new Error('Failed to convert to DOCX');
           }
           break;
