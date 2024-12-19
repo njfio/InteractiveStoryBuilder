@@ -51,10 +51,8 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
         if (!currentText.endsWith('\n\n')) {
           currentText += '\n\n';
         }
-      } else if (node.type === 'listItem') {
-        if (!currentText.endsWith('\n')) {
-          currentText += '\n';
-        }
+      } else if (node.type === 'listItem' && !currentText.endsWith('\n')) {
+        currentText += '\n';
       }
     }
 
@@ -69,8 +67,6 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
         currentText = '';
         currentChunkLines = 0;
         preservingSpecialSection = false;
-
-        // Just store H1 without adding to content
         currentH1 = getHeadingText(node);
       } else {
         // Preserve exact heading formatting
@@ -79,11 +75,14 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
       }
     } else if (node.type === 'list') {
       inList = true;
-      // Lists are handled by their items
-    } else if (node.type === 'listItem') {
-      const prefix = (node.parent as any).ordered 
-        ? `${((node.parent as any).start || 1) + (node as any).index}.`
-        : '-';
+    } else if (node.type === 'listItem' && inList) {
+      // Only process list items when inside a list
+      const parent = (node as any).parent;
+      if (!parent || parent.type !== 'list') return;
+
+      const isOrdered = parent.ordered;
+      const listIndex = isOrdered ? ((parent.start || 1) + (node as any).index) : null;
+      const prefix = isOrdered ? `${listIndex}.` : '-';
 
       let itemText = '';
       visit(node, 'paragraph', (p: any) => {
