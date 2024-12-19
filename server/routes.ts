@@ -517,11 +517,12 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: 'Manuscript not found' });
       }
 
-      const chunks = await db.query.chunks.findMany({
+      const chunks2 = await db.query.chunks.findMany({
         where: eq(chunks.manuscriptId, parseInt(req.params.id)),
         orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
       });
-
+      
+      // We're not using chunks currently, but keeping the query for future use
       // Ensure tmp directory exists
       const fs = require('fs/promises');
       const path = require('path');

@@ -1,0 +1,289 @@
+_app-5fe57646a8c5daa2.js:16 
+        
+        
+       POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+(anonymous) @ _app-5fe57646a8c5daa2.js:1
+o @ _app-5fe57646a8c5daa2.js:1
+promise @ _app-5fe57646a8c5daa2.js:4
+(anonymous) @ _app-5fe57646a8c5daa2.js:4
+n.httpRequest @ _app-5fe57646a8c5daa2.js:4
+t @ _app-5fe57646a8c5daa2.js:4
+a.sendChunk @ _app-5fe57646a8c5daa2.js:4
+a.sendEvents @ _app-5fe57646a8c5daa2.js:4
+a.flush @ _app-5fe57646a8c5daa2.js:4
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+_app-5fe57646a8c5daa2.js:16 
+        
+        
+       POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+(anonymous) @ _app-5fe57646a8c5daa2.js:1
+o @ _app-5fe57646a8c5daa2.js:1
+promise @ _app-5fe57646a8c5daa2.js:4
+(anonymous) @ _app-5fe57646a8c5daa2.js:4
+n.httpRequest @ _app-5fe57646a8c5daa2.js:4
+t @ _app-5fe57646a8c5daa2.js:4
+(anonymous) @ _app-5fe57646a8c5daa2.js:4
+Promise.catch (async)
+t @ _app-5fe57646a8c5daa2.js:4
+a.sendChunk @ _app-5fe57646a8c5daa2.js:4
+a.sendEvents @ _app-5fe57646a8c5daa2.js:4
+a.flush @ _app-5fe57646a8c5daa2.js:4
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+setTimeout (async)
+(anonymous) @ _app-5fe57646a8c5daa2.js:16
+e @ _app-5fe57646a8c5daa2.js:4
+r @ _app-5fe57646a8c5daa2.js:16
+ExportDialog.tsx:29 
+        
+        
+       GET https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/api/manuscripts/9/export?format=markdown 500 (Internal Server Error)
+window.fetch @ Network.js:219
+handleExport @ ExportDialog.tsx:29
+onClick @ ExportDialog.tsx:87
+callCallback2 @ chunk-UPELNCPK.js?v=e2d9d238:3674
+invokeGuardedCallbackDev @ chunk-UPELNCPK.js?v=e2d9d238:3699
+invokeGuardedCallback @ chunk-UPELNCPK.js?v=e2d9d238:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-UPELNCPK.js?v=e2d9d238:3736
+executeDispatch @ chunk-UPELNCPK.js?v=e2d9d238:7014
+processDispatchQueueItemsInOrder @ chunk-UPELNCPK.js?v=e2d9d238:7034
+processDispatchQueue @ chunk-UPELNCPK.js?v=e2d9d238:7043
+dispatchEventsForPlugins @ chunk-UPELNCPK.js?v=e2d9d238:7051
+(anonymous) @ chunk-UPELNCPK.js?v=e2d9d238:7174
+batchedUpdates$1 @ chunk-UPELNCPK.js?v=e2d9d238:18913
+batchedUpdates @ chunk-UPELNCPK.js?v=e2d9d238:3579
+dispatchEventForPluginEventSystem @ chunk-UPELNCPK.js?v=e2d9d238:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-UPELNCPK.js?v=e2d9d238:5478
+dispatchEvent @ chunk-UPELNCPK.js?v=e2d9d238:5472
+dispatchDiscreteEvent @ chunk-UPELNCPK.js?v=e2d9d238:5449
+Show 16 more frames
+Show less
+ExportDialog.tsx:29 
+        
+        
+       GET https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/api/manuscripts/9/export?format=docx 500 (Internal Server Error)
+window.fetch @ Network.js:219
+handleExport @ ExportDialog.tsx:29
+onClick @ ExportDialog.tsx:98
+callCallback2 @ chunk-UPELNCPK.js?v=e2d9d238:3674
+invokeGuardedCallbackDev @ chunk-UPELNCPK.js?v=e2d9d238:3699
+invokeGuardedCallback @ chunk-UPELNCPK.js?v=e2d9d238:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-UPELNCPK.js?v=e2d9d238:3736
+executeDispatch @ chunk-UPELNCPK.js?v=e2d9d238:7014
+processDispatchQueueItemsInOrder @ chunk-UPELNCPK.js?v=e2d9d238:7034
+processDispatchQueue @ chunk-UPELNCPK.js?v=e2d9d238:7043
+dispatchEventsForPlugins @ chunk-UPELNCPK.js?v=e2d9d238:7051
+(anonymous) @ chunk-UPELNCPK.js?v=e2d9d238:7174
+batchedUpdates$1 @ chunk-UPELNCPK.js?v=e2d9d238:18913
+batchedUpdates @ chunk-UPELNCPK.js?v=e2d9d238:3579
+dispatchEventForPluginEventSystem @ chunk-UPELNCPK.js?v=e2d9d238:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-UPELNCPK.js?v=e2d9d238:5478
+dispatchEvent @ chunk-UPELNCPK.js?v=e2d9d238:5472
+dispatchDiscreteEvent @ chunk-UPELNCPK.js?v=e2d9d238:5449
+Show 16 more frames
+Show less
+ExportDialog.tsx:29 
+        
+        
+       GET https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/api/manuscripts/9/export?format=epub 500 (Internal Server Error)
+window.fetch @ Network.js:219
+handleExport @ ExportDialog.tsx:29
+onClick @ ExportDialog.tsx:76
+callCallback2 @ chunk-UPELNCPK.js?v=e2d9d238:3674
+invokeGuardedCallbackDev @ chunk-UPELNCPK.js?v=e2d9d238:3699
+invokeGuardedCallback @ chunk-UPELNCPK.js?v=e2d9d238:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-UPELNCPK.js?v=e2d9d238:3736
+executeDispatch @ chunk-UPELNCPK.js?v=e2d9d238:7014
+processDispatchQueueItemsInOrder @ chunk-UPELNCPK.js?v=e2d9d238:7034
+processDispatchQueue @ chunk-UPELNCPK.js?v=e2d9d238:7043
+dispatchEventsForPlugins @ chunk-UPELNCPK.js?v=e2d9d238:7051
+(anonymous) @ chunk-UPELNCPK.js?v=e2d9d238:7174
+batchedUpdates$1 @ chunk-UPELNCPK.js?v=e2d9d238:18913
+batchedUpdates @ chunk-UPELNCPK.js?v=e2d9d238:3579
+dispatchEventForPluginEventSystem @ chunk-UPELNCPK.js?v=e2d9d238:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-UPELNCPK.js?v=e2d9d238:5478
+dispatchEvent @ chunk-UPELNCPK.js?v=e2d9d238:5472
+dispatchDiscreteEvent @ chunk-UPELNCPK.js?v=e2d9d238:5449
+Show 16 more frames
+Show less
+ExportDialog.tsx:29 
+        
+        
+       GET https://a16ec7f3-9f85-4946-b578-5132b3a78fef-00-32bmsyqgem49d.spock.replit.dev/api/manuscripts/9/export?format=markdown 500 (Internal Server Error)
