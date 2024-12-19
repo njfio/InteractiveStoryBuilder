@@ -29,12 +29,15 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
   };
 
   const saveChunk = (text: string, force: boolean = false) => {
-    // Preserve whitespace but remove leading/trailing empty lines
+    // Remove leading/trailing empty lines but preserve internal formatting
     const trimmedText = text.replace(/^\n+|\n+$/g, '');
     if (!trimmedText) return;
 
-    // Rule 7: Don't create single-line chunks unless it's a heading
+    // Rule 7: Don't create single-line chunks unless it's a heading or forced
     if (!force && trimmedText.split('\n').filter(line => line.trim()).length === 1 && !currentH1) return;
+
+    // Rule 4: Avoid over-fragmentation - don't create tiny chunks
+    if (!force && trimmedText.split('\n\n').length < 2) return;
 
     chunks.push({
       headingH1: currentH1,
@@ -56,20 +59,19 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
   visit(ast, (node: Node) => {
     if (node.type === 'heading' && 'depth' in node) {
       if (node.depth === 1) {
-        // Rule 3: Never split headings
+        // Save existing content before starting new section
         if (currentText) {
           saveChunk(currentText);
         }
+        
+        // Reset state for new section
         currentText = '';
         paragraphCount = 0;
-        
-        // Update current H1
-        currentH1 = getHeadingText(node).replace(/^\*\*(.*)\*\*$/, '$1').trim();
-        // Create a chunk for the header itself
-        saveChunk(currentH1, true);
-        
-        // Reset special section flag for new major section
         isSpecialSection = false;
+        
+        // Update current H1 without creating separate chunk
+        currentH1 = getHeadingText(node).replace(/^\*\*(.*)\*\*$/, '$1').trim();
+        currentText = `# ${currentH1}\n\n`; // Include header in the content
       }
     } else if (node.type === 'paragraph') {
       const paragraphText = getParagraphText(node);
@@ -85,22 +87,25 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
       }
 
       // Add paragraph to current chunk with proper formatting
-      if (currentText) {
-        // Ensure double newline between paragraphs
+      if (currentText && !currentText.endsWith('\n\n')) {
         currentText += '\n\n';
       }
-      // Preserve the original paragraph text with its formatting
       currentText += paragraphText;
       paragraphCount++;
 
-      // Check if we should start a new chunk
-      if (!isSpecialSection && shouldStartNewChunk()) {
+      // Rule 2: Each chunk should have 4-6 paragraphs
+      if (!isSpecialSection && paragraphCount >= 5) {
         saveChunk(currentText);
         currentText = '';
         paragraphCount = 0;
       }
     }
   });
+
+  // Save the final chunk if there's any content
+  if (currentText) {
+    saveChunk(currentText);
+  }
 
   // Save the final chunk if there's any content
   if (currentText) {
@@ -121,9 +126,13 @@ const getHeadingText = (node: Node): string => {
 const getParagraphText = (node: Node): string => {
   let text = '';
   visit(node, 'text', (textNode: { value: string }) => {
-    text += textNode.value + ' ';
+    // Add spaces only between text nodes, not at the end
+    if (text && !text.endsWith(' ')) {
+      text += ' ';
+    }
+    text += textNode.value;
   });
-  return text.trim();
+  return text;
 };
 
 export const validateMarkdown = (markdown: string): boolean => {
