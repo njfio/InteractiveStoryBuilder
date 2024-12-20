@@ -1,0 +1,74 @@
+   Compiling crypto-balatro-frontend v0.1.0 (/Users/n/LeptosFlightTrackerGame/crypto-balatro/frontend)
+error[E0277]: the trait bound `Box<(dyn Fn(Card) + 'static)>: From<Box<{closure@src/game/game_manager.rs:62:55: 62:63}>>` is not satisfied
+  --> src/game/game_manager.rs:59:29
+   |
+59 | / ...                   view! {
+60 | | ...                       <CardView
+61 | | ...                           card=card
+62 | | ...                           on_click=Box::new(move |_| ())
+   | |                               -------- --------------------- this tail expression is of type `Box<{closure@game_manager.rs:62:55}>`
+   | |                               |
+   | |                               required by a bound introduced by this call
+63 | | ...                       />
+64 | | ...                   }
+   | |_______________________^ the trait `From<Box<{closure@src/game/game_manager.rs:62:55: 62:63}>>` is not implemented for `Box<(dyn Fn(Card) + 'static)>`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `Box<CStr>` implements `From<&CStr>`
+             `Box<CStr>` implements `From<&mut CStr>`
+             `Box<CStr>` implements `From<CString>`
+             `Box<CStr>` implements `From<Cow<'_, CStr>>`
+             `Box<OsStr>` implements `From<&OsStr>`
+             `Box<OsStr>` implements `From<&mut OsStr>`
+             `Box<OsStr>` implements `From<Cow<'_, OsStr>>`
+             `Box<OsStr>` implements `From<OsString>`
+           and 34 others
+   = note: required for `Box<{closure@src/game/game_manager.rs:62:55: 62:63}>` to implement `Into<Box<(dyn Fn(Card) + 'static)>>`
+note: required by a bound in `CardViewPropsBuilder::<(__card, ())>::on_click`
+  --> src/components/card.rs:4:1
+   |
+4  | #[component]
+   | ^^^^^^^^^^^^ required by this bound in `CardViewPropsBuilder::<(__card, ())>::on_click`
+...
+7  |     #[prop(into)] on_click: Box<dyn Fn(Card)>,
+   |                   -------- required by a bound in this associated function
+   = note: this error originates in the derive macro `::leptos::typed_builder_macro::TypedBuilder` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Box<(dyn Fn(Card) + 'static)>: From<Box<{closure@src/game/game_manager.rs:115:55: 115:63}>>` is not satisfied
+   --> src/game/game_manager.rs:112:29
+    |
+112 | / ...                   view! {
+113 | | ...                       <CardView
+114 | | ...                           card=card
+115 | | ...                           on_click=Box::new(move |c| on_click(c))
+    | |                               -------- ------------------------------ this tail expression is of type `Box<{closure@game_manager.rs:115:55}>`
+    | |                               |
+    | |                               required by a bound introduced by this call
+116 | | ...                       />
+117 | | ...                   }
+    | |_______________________^ the trait `From<Box<{closure@src/game/game_manager.rs:115:55: 115:63}>>` is not implemented for `Box<(dyn Fn(Card) + 'static)>`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `Box<CStr>` implements `From<&CStr>`
+              `Box<CStr>` implements `From<&mut CStr>`
+              `Box<CStr>` implements `From<CString>`
+              `Box<CStr>` implements `From<Cow<'_, CStr>>`
+              `Box<OsStr>` implements `From<&OsStr>`
+              `Box<OsStr>` implements `From<&mut OsStr>`
+              `Box<OsStr>` implements `From<Cow<'_, OsStr>>`
+              `Box<OsStr>` implements `From<OsString>`
+            and 34 others
+    = note: required for `Box<{closure@src/game/game_manager.rs:115:55: 115:63}>` to implement `Into<Box<(dyn Fn(Card) + 'static)>>`
+note: required by a bound in `CardViewPropsBuilder::<(__card, ())>::on_click`
+   --> src/components/card.rs:4:1
+    |
+4   | #[component]
+    | ^^^^^^^^^^^^ required by this bound in `CardViewPropsBuilder::<(__card, ())>::on_click`
+...
+7   |     #[prop(into)] on_click: Box<dyn Fn(Card)>,
+    |                   -------- required by a bound in this associated function
+    = note: this error originates in the derive macro `::leptos::typed_builder_macro::TypedBuilder` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `crypto-balatro-frontend` (lib) due to 2 previous errors
+bash-3.2$ 
