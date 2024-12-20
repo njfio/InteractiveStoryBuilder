@@ -28,6 +28,7 @@ export const parseMarkdown = async (
   let paragraphCount = 0;
   let inCodeBlock = false;
   let inList = false;
+  let listIndentLevel = 0;
 
   const addChunk = (lines: string[], force = false) => {
     const text = lines.join('\n').trim();
@@ -57,30 +58,38 @@ export const parseMarkdown = async (
   };
 
   // Function to check if a line is part of a list
-  const isListItem = (line: string) => /^[-*+]|\d+\./.test(line.trim());
+  const isListItem = (line: string) => {
+    const trimmed = line.trim();
+    return /^[-*+]|\d+\./.test(trimmed);
+  };
 
-  // Function to check if next lines continue the list
-  const isListContinuation = (startIndex: number): boolean => {
+  // Function to check if a line is a list continuation
+  const isListContent = (line: string) => {
+    if (!line.trim()) return true; // Empty lines in lists are part of the list
+    const leadingSpaces = line.match(/^\s*/)?.[0].length || 0;
+    return leadingSpaces > listIndentLevel;
+  };
+
+  // Function to detect if we're still in a list context
+  const isListContext = (startIndex: number): boolean => {
     let i = startIndex;
-    let line = lines[i]?.trim();
-
-    // Skip empty lines
-    while (i < lines.length && !line) {
-      i++;
-      line = lines[i]?.trim();
+    while (i < lines.length) {
+      const line = lines[i].trim();
+      if (!line) {
+        i++;
+        continue;
+      }
+      return isListItem(lines[i]) || isListContent(lines[i]);
     }
-
-    return !!line && isListItem(line);
+    return false;
   };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmedLine = line.trim();
-    const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
 
     // Handle headings
     if (trimmedLine.startsWith('#')) {
-      // Add any accumulated content before processing the heading
       if (currentChunk.length > 0) {
         addChunk(currentChunk);
         currentChunk = [];
@@ -131,12 +140,13 @@ export const parseMarkdown = async (
           paragraphCount = 0;
         }
         inList = true;
+        listIndentLevel = line.match(/^\s*/)?.[0].length || 0;
       }
 
       if (inList) {
         currentChunk.push(line);
         // Check if list is ending
-        if (!isListContinuation(i + 1)) {
+        if (!isListContext(i + 1)) {
           inList = false;
           // Only create chunk if we have enough content
           if (currentChunk.length > 0) {
