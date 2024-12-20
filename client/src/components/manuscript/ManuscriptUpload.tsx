@@ -37,6 +37,7 @@ export function ManuscriptUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [currentChunks, setCurrentChunks] = useState<any[]>([]);
   const [editorView, setEditorView] = useState<EditorView | null>(null);
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -94,6 +95,7 @@ export function ManuscriptUpload() {
 
       form.reset();
       setCurrentChunks([]);
+      setOpen(false);
     } catch (error) {
       toast({
         title: 'Error',
@@ -106,79 +108,84 @@ export function ManuscriptUpload() {
   };
 
   return (
-    <Dialog>
-      <DialogContent className="w-[90vw] max-w-[1400px] h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="default">Upload New</Button>
+      </DialogTrigger>
+      <DialogContent className="w-[90vw] max-w-[1400px] h-[90vh]">
         <DialogHeader>
           <DialogTitle>Upload Manuscript</DialogTitle>
           <DialogDescription>
             Upload your manuscript content in markdown format
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="My Novel" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="space-y-4">
+        <div className="mt-4 overflow-y-auto pr-4" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="markdown"
+                name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Content (Markdown)</FormLabel>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <div className="space-y-4">
-                        <MarkdownEditor
-                          value={field.value}
-                          onChange={field.onChange}
-                          onEditorMount={setEditorView}
-                          className="min-h-[330px] max-h-[440px] border rounded-md w-full"
-                        />
-
-                        {field.value && (
-                          <Card className="w-full">
-                            <CardContent className="pt-6">
-                              <ChunkPreview 
-                                markdown={field.value}
-                                onChange={setCurrentChunks}
-                                onChunkSelect={handleChunkSelect}
-                              />
-                            </CardContent>
-                          </Card>
-                        )}
-                      </div>
+                      <Input placeholder="My Novel" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="sticky bottom-0 bg-background pt-4">
-              <Button type="submit" disabled={isUploading}>
-                {isUploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  'Upload Manuscript'
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="markdown"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Content (Markdown)</FormLabel>
+                      <FormControl>
+                        <div className="space-y-4">
+                          <MarkdownEditor
+                            value={field.value}
+                            onChange={field.onChange}
+                            onEditorMount={setEditorView}
+                            className="min-h-[330px] max-h-[440px] border rounded-md w-full"
+                          />
+
+                          {field.value && (
+                            <Card className="w-full">
+                              <CardContent className="pt-6">
+                                <ChunkPreview 
+                                  markdown={field.value}
+                                  onChange={setCurrentChunks}
+                                  onChunkSelect={handleChunkSelect}
+                                />
+                              </CardContent>
+                            </Card>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="sticky bottom-0 bg-background pt-4">
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload Manuscript'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
