@@ -104,10 +104,15 @@ export const parseMarkdown = async (
 
     // Handle paragraphs and blank lines
     if (!trimmedLine) {
+      // Always preserve the blank line in the current chunk
+      currentChunk.push(line);
+
       if (currentChunk.length > 0) {
+        // Increment paragraph count when we hit a blank line
         paragraphCount++;
         const maxParagraphs = settings.paragraphsPerChunk || 1;
 
+        // Check if we've accumulated enough paragraphs
         if (paragraphCount >= maxParagraphs) {
           // Only create chunk if it meets minimum line requirement
           const nonEmptyLines = currentChunk.filter(l => l.trim()).length;
@@ -119,14 +124,8 @@ export const parseMarkdown = async (
         }
       }
     } else {
-      // If starting a new chunk or continuing current paragraph
-      if (currentChunk.length === 0 || currentChunk[currentChunk.length - 1].trim()) {
-        currentChunk.push(line);
-      }
-      // Start a new paragraph
-      else if (!currentChunk[currentChunk.length - 1].trim()) {
-        currentChunk.push(line);
-      }
+      // Add the line to current chunk
+      currentChunk.push(line);
     }
   }
 
