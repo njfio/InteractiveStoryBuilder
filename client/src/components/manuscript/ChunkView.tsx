@@ -18,8 +18,7 @@ import {
   ChevronRight,
   Home,
   BookOpen,
-  Edit2,
-  Edit
+  Edit2
 } from 'lucide-react';
 import {
   Tooltip,
@@ -34,10 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from '@/components/ui/dialog';
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -58,10 +54,6 @@ interface Manuscript {
   title: string;
   authorId: string;
   imageSettings: ImageSettings;
-  author?: {
-    email: string;
-    displayName?: string;
-  };
 }
 
 interface Chunk {
@@ -70,7 +62,6 @@ interface Chunk {
   headingH1?: string;
   text: string;
   imageUrl?: string;
-  chunkOrder: number;
   manuscript: Manuscript;
 }
 
@@ -140,44 +131,6 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
       toast({
         title: 'Error',
         description: error.message || 'Failed to generate image',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const updateTitle = useMutation({
-    mutationFn: async (newTitle: string) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Please sign in to update the manuscript');
-      }
-
-      const response = await fetch(`/api/manuscripts/${chunk.manuscriptId}/title`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ title: newTitle }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update title');
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${chunk.manuscriptId}`] });
-      toast({
-        title: 'Success',
-        description: 'Manuscript title updated successfully',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: (error as Error).message,
         variant: 'destructive',
       });
     },
@@ -478,55 +431,6 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                               }}
                             />
                           </div>
-                        </DialogContent>
-                      </Dialog>
-                    </TooltipProvider>
-                  )}
-
-                  {isAuthor && (
-                    <TooltipProvider>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Edit Manuscript Title</DialogTitle>
-                            <DialogDescription>
-                              Update the title of your manuscript
-                            </DialogDescription>
-                          </DialogHeader>
-                          <form onSubmit={(e) => {
-                            e.preventDefault();
-                            const formData = new FormData(e.currentTarget);
-                            const newTitle = formData.get('title') as string;
-                            if (newTitle) {
-                              updateTitle.mutate(newTitle);
-                            }
-                          }}>
-                            <div className="grid gap-4 py-4">
-                              <div className="flex flex-col gap-2">
-                                <Label htmlFor="title">Title</Label>
-                                <Input
-                                  id="title"
-                                  name="title"
-                                  defaultValue={chunk.manuscript.title}
-                                  placeholder="Enter manuscript title"
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button type="submit" disabled={updateTitle.isPending}>
-                                {updateTitle.isPending ? (
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                  'Save Changes'
-                                )}
-                              </Button>
-                            </DialogFooter>
-                          </form>
                         </DialogContent>
                       </Dialog>
                     </TooltipProvider>

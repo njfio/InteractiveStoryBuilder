@@ -5,18 +5,13 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: async ({ queryKey }) => {
-        // Get current session
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
 
         const res = await fetch(queryKey[0] as string, {
+          credentials: "include",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         });
 
@@ -24,6 +19,7 @@ export const queryClient = new QueryClient({
           if (res.status >= 500) {
             throw new Error(`${res.status}: ${res.statusText}`);
           }
+
           throw new Error(`${res.status}: ${await res.text()}`);
         }
 

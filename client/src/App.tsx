@@ -1,25 +1,19 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Link } from "wouter";
 import { Home } from "@/pages/Home";
 import { Login } from "@/pages/Login";
 import { Dashboard } from "@/pages/Dashboard";
 import { Reader } from "@/pages/Reader";
 import { Gallery } from "@/pages/Gallery";
 import { ManuscriptGallery } from "@/pages/ManuscriptGallery";
-import { useAuthStore } from "@/lib/auth";
+import { useEffect } from "react";
+import { initAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Images } from "lucide-react";
 
 function App() {
-  const { user, loading } = useAuthStore();
-
-  // Show loading state while auth is initializing
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    initAuth();
+  }, []);
 
   return (
     <div>

@@ -5,11 +5,14 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import {
   ChevronDown,
   ChevronUp,
   GripVertical,
   MoreVertical,
+  Plus,
+  Trash,
   Scissors,
   Merge,
 } from 'lucide-react';
@@ -21,32 +24,23 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 
-interface Chunk {
-  id: number;
-  manuscriptId: number;
-  headingH1?: string;
-  text: string;
-  chunkOrder: number;
-}
-
 interface ManuscriptChunkEditorProps {
   manuscriptId: number;
-  chunk?: Chunk;
 }
 
-export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEditorProps) {
+export function ManuscriptChunkEditor({ manuscriptId }: ManuscriptChunkEditorProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedChunk, setSelectedChunk] = useState<number | null>(chunk?.id || null);
+  const [selectedChunk, setSelectedChunk] = useState<number | null>(null);
 
-  // Fetch all chunks for this manuscript for proper ordering
-  const { data: chunks = [], isLoading } = useQuery<Chunk[]>({
+  // Fetch chunks for this manuscript
+  const { data: chunks = [], isLoading } = useQuery({
     queryKey: [`/api/manuscripts/${manuscriptId}/chunks`],
   });
 
   // Update chunk mutation
   const updateChunk = useMutation({
-    mutationFn: async ({ id, text, chunkOrder }: Partial<Chunk> & { chunkOrder?: number }) => {
+    mutationFn: async ({ id, text, order }: any) => {
       const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/manuscripts/${manuscriptId}/chunks/${id}`, {
         method: 'PUT',
@@ -54,7 +48,7 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`
         },
-        body: JSON.stringify({ text, chunkOrder }),
+        body: JSON.stringify({ text, order }),
       });
       if (!response.ok) throw new Error('Failed to update chunk');
       return response.json();
@@ -70,7 +64,7 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
 
   // Merge chunks mutation
   const mergeChunks = useMutation({
-    mutationFn: async ({ chunk1Id, chunk2Id }: { chunk1Id: number; chunk2Id: number }) => {
+    mutationFn: async ({ chunk1Id, chunk2Id }: any) => {
       const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/manuscripts/${manuscriptId}/chunks/merge`, {
         method: 'POST',
@@ -87,14 +81,11 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
       queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${manuscriptId}/chunks`] });
       toast({ title: 'Success', description: 'Chunks merged successfully' });
     },
-    onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    },
   });
 
   // Split chunk mutation
   const splitChunk = useMutation({
-    mutationFn: async ({ id, splitPoint }: { id: number; splitPoint: number }) => {
+    mutationFn: async ({ id, splitPoint }: any) => {
       const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/manuscripts/${manuscriptId}/chunks/${id}/split`, {
         method: 'POST',
@@ -111,25 +102,22 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
       queryClient.invalidateQueries({ queryKey: [`/api/manuscripts/${manuscriptId}/chunks`] });
       toast({ title: 'Success', description: 'Chunk split successfully' });
     },
-    onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    },
   });
 
-  const handleMoveChunk = async (chunkToMove: Chunk, direction: 'up' | 'down') => {
-    const currentIndex = chunks.findIndex((c) => c.id === chunkToMove.id);
+  const handleMoveChunk = async (chunk: any, direction: 'up' | 'down') => {
+    const currentIndex = chunks.findIndex((c: any) => c.id === chunk.id);
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
 
     if (newIndex < 0 || newIndex >= chunks.length) return;
 
     const updates = [
-      { id: chunkToMove.id, chunkOrder: chunks[newIndex].chunkOrder },
-      { id: chunks[newIndex].id, chunkOrder: chunkToMove.chunkOrder },
+      { id: chunk.id, order: newIndex },
+      { id: chunks[newIndex].id, order: currentIndex },
     ];
 
     await Promise.all(
-      updates.map(({ id, chunkOrder }) =>
-        updateChunk.mutateAsync({ id, chunkOrder })
+      updates.map(({ id, order }) =>
+        updateChunk.mutateAsync({ id, order })
       )
     );
   };
@@ -142,18 +130,22 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
     );
   }
 
-  // Filter chunks to show either all chunks or just the selected one
-  const chunksToShow = chunk ? [chunk] : chunks.sort((a, b) => a.chunkOrder - b.chunkOrder);
-
   return (
     <div className="space-y-4">
+      <div className="sticky top-0 z-10 bg-background p-4 border-b">
+        <h2 className="text-2xl font-bold">Manuscript Chunks</h2>
+        <p className="text-sm text-muted-foreground">
+          Edit, reorder, merge, or split chunks using the controls below
+        </p>
+      </div>
+
       <ScrollArea className="h-[calc(100vh-12rem)]">
         <div className="space-y-4 p-4">
-          {chunksToShow.map((currentChunk, index) => (
+          {chunks.map((chunk: any, index: number) => (
             <Card
-              key={currentChunk.id}
+              key={chunk.id}
               className={`p-4 ${
-                selectedChunk === currentChunk.id ? 'ring-2 ring-primary' : ''
+                selectedChunk === chunk.id ? 'ring-2 ring-primary' : ''
               }`}
             >
               <div className="flex items-start gap-4">
@@ -161,7 +153,7 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleMoveChunk(currentChunk, 'up')}
+                    onClick={() => handleMoveChunk(chunk, 'up')}
                     disabled={index === 0}
                   >
                     <ChevronUp className="h-4 w-4" />
@@ -170,7 +162,7 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleMoveChunk(currentChunk, 'down')}
+                    onClick={() => handleMoveChunk(chunk, 'down')}
                     disabled={index === chunks.length - 1}
                   >
                     <ChevronDown className="h-4 w-4" />
@@ -179,12 +171,12 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
 
                 <div className="flex-1">
                   <Textarea
-                    value={currentChunk.text}
+                    value={chunk.text}
                     onChange={(e) =>
                       updateChunk.mutate({
-                        id: currentChunk.id,
+                        id: chunk.id,
                         text: e.target.value,
-                        chunkOrder: currentChunk.chunkOrder,
+                        order: chunk.order,
                       })
                     }
                     className="min-h-[100px] font-mono"
@@ -201,7 +193,7 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
                     <DropdownMenuItem
                       onClick={() =>
                         mergeChunks.mutate({
-                          chunk1Id: currentChunk.id,
+                          chunk1Id: chunk.id,
                           chunk2Id: chunks[index + 1]?.id,
                         })
                       }
@@ -213,9 +205,9 @@ export function ManuscriptChunkEditor({ manuscriptId, chunk }: ManuscriptChunkEd
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        const splitPoint = Math.floor(currentChunk.text.length / 2);
+                        const splitPoint = chunk.text.length / 2;
                         splitChunk.mutate({
-                          id: currentChunk.id,
+                          id: chunk.id,
                           splitPoint,
                         });
                       }}

@@ -30,6 +30,7 @@ export function LoginForm() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('Form submitted:', values);
     setIsLoading(true);
     try {
       if (isSignUp) {
