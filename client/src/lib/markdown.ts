@@ -24,28 +24,26 @@ export const parseMarkdown = async (
 
   // Split content into lines
   const lines = markdown.split('\n');
-  let currentChunk: string[] = [];
-  let paragraphCount = 0;
-  let inCodeBlock = false;
+  let currentContent: string[] = [];
   let inList = false;
-  let listContent: string[] = [];
+  let inCodeBlock = false;
 
-  const addChunk = (lines: string[], force = false) => {
-    const text = lines.join('\n').trim();
+  const isListStart = (line: string) => {
+    const trimmed = line.trim();
+    return /^[-*+]|\d+\./.test(trimmed);
+  };
+
+  const isListContinuation = (line: string) => {
+    if (!line.trim()) return true; // Empty lines within list context
+    return line.startsWith(' ') || isListStart(line); // Indented content or new list items
+  };
+
+  const addChunk = (content: string[]) => {
+    const text = content.join('\n').trim();
     if (!text) return;
 
-    // Only force bypass for H1 headers
-    if (force && text.startsWith('# ')) {
-      chunks.push({
-        headingH1: currentH1,
-        text,
-        order: chunkOrder++
-      });
-      return;
-    }
-
-    // All other content must meet minimum line requirement
-    const nonEmptyLines = text.split('\n').filter(line => line.trim()).length;
+    // Count non-empty lines
+    const nonEmptyLines = content.filter(line => line.trim()).length;
     const minLines = settings.minLines || 2;
 
     if (nonEmptyLines >= minLines || inList) {
@@ -57,161 +55,96 @@ export const parseMarkdown = async (
     }
   };
 
-  const isListStart = (line: string) => {
-    const trimmed = line.trim();
-    return /^[-*+]|\d+\./.test(trimmed);
-  };
-
-  const isListContinuation = (line: string) => {
-    const trimmed = line.trim();
-    if (!trimmed) return true; // Empty lines within a list context are part of the list
-    return /^\s+/.test(line) || isListStart(line); // Indented content or new list items
-  };
-
-  const processCurrentParagraph = () => {
-    if (currentChunk.length > 0) {
-      paragraphCount++;
-      if (paragraphCount >= (settings.paragraphsPerChunk || 1)) {
-        addChunk(currentChunk);
-        currentChunk = [];
-        paragraphCount = 0;
-      }
+  const processCurrentContent = () => {
+    if (currentContent.length > 0) {
+      addChunk(currentContent);
+      currentContent = [];
     }
   };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmedLine = line.trim();
-    const nextLine = lines[i + 1]?.trim();
-
-    // Handle headings
-    if (trimmedLine.startsWith('#')) {
-      if (inList) {
-        // Complete the current list
-        currentChunk = [...listContent];
-        addChunk(currentChunk);
-        currentChunk = [];
-        listContent = [];
-        inList = false;
-      } else if (currentChunk.length > 0) {
-        processCurrentParagraph();
-        addChunk(currentChunk);
-        currentChunk = [];
-      }
-
-      if (trimmedLine.startsWith('# ')) {
-        currentH1 = trimmedLine.replace(/^#\s+/, '');
-        addChunk([line], true);
-      } else {
-        addChunk([line], true);
-      }
-      paragraphCount = 0;
-      continue;
-    }
 
     // Handle code blocks
     if (trimmedLine.startsWith('```')) {
       if (!inCodeBlock) {
-        if (inList) {
-          currentChunk = [...listContent];
-          addChunk(currentChunk);
-          currentChunk = [];
-          listContent = [];
-          inList = false;
-        } else if (currentChunk.length > 0) {
-          processCurrentParagraph();
-          addChunk(currentChunk);
-          currentChunk = [];
-        }
+        processCurrentContent();
         inCodeBlock = true;
       } else {
         inCodeBlock = false;
-        if (currentChunk.length > 0) {
-          addChunk(currentChunk);
-          currentChunk = [];
+        if (currentContent.length > 0) {
+          addChunk(currentContent);
+          currentContent = [];
         }
       }
-      paragraphCount = 0;
+      currentContent.push(line);
       continue;
     }
 
     if (inCodeBlock) {
-      currentChunk.push(line);
+      currentContent.push(line);
       continue;
     }
 
-    // Handle lists and paragraphs
+    // Handle headers
+    if (trimmedLine.startsWith('#')) {
+      processCurrentContent();
+
+      if (trimmedLine.startsWith('# ')) {
+        currentH1 = trimmedLine.replace(/^#\s+/, '');
+        addChunk([line]);
+      } else {
+        addChunk([line]);
+      }
+      continue;
+    }
+
+    // Handle lists
     if (settings.preserveLists) {
       if (isListStart(line) && !inList) {
-        // Start new list after completing current paragraph
-        if (currentChunk.length > 0) {
-          processCurrentParagraph();
-          addChunk(currentChunk);
-          currentChunk = [];
-        }
+        // Start new list after completing current content
+        processCurrentContent();
         inList = true;
-        listContent = [line];
+        currentContent = [line];
       } else if (inList) {
-        // Continue list
-        if (isListContinuation(line) || !trimmedLine) {
-          listContent.push(line);
-
-          // Check if list is ending
-          const nextNonEmptyLine = lines.slice(i + 1).find(l => l.trim());
-          if (!nextNonEmptyLine || (!isListContinuation(nextNonEmptyLine) && !isListStart(nextNonEmptyLine))) {
-            // Add the complete list as a chunk
-            currentChunk = [...listContent];
-            addChunk(currentChunk);
-            currentChunk = [];
-            listContent = [];
-            inList = false;
-            paragraphCount = 0;
-          }
+        if (isListContinuation(line)) {
+          currentContent.push(line);
         } else {
-          // List is ending because we found non-list content
-          currentChunk = [...listContent];
-          addChunk(currentChunk);
-          currentChunk = [line];
-          listContent = [];
+          // End of list
+          processCurrentContent();
           inList = false;
-          paragraphCount = 1;
+          currentContent = [line];
         }
       } else {
-        // Handle regular paragraphs
-        if (!trimmedLine) {
-          if (currentChunk.length > 0) {
-            currentChunk.push(line);
-            processCurrentParagraph();
+        // Regular paragraph content
+        if (!trimmedLine && currentContent.length > 0) {
+          // Empty line after content - check if we need to create a new chunk
+          currentContent.push(line);
+          const nextLine = lines[i + 1]?.trim();
+          if (nextLine && !nextLine.startsWith('#') && !isListStart(nextLine)) {
+            // There's more paragraph content coming, continue
+            continue;
           }
-        } else {
-          currentChunk.push(line);
-          if (!nextLine) {
-            processCurrentParagraph();
-          }
+          processCurrentContent();
+        } else if (trimmedLine) {
+          currentContent.push(line);
         }
       }
     } else {
       // When not preserving lists, treat everything as regular content
-      if (!trimmedLine) {
-        if (currentChunk.length > 0) {
-          currentChunk.push(line);
-          processCurrentParagraph();
-        }
-      } else {
-        currentChunk.push(line);
-        if (!nextLine) {
-          processCurrentParagraph();
-        }
+      if (!trimmedLine && currentContent.length > 0) {
+        currentContent.push(line);
+        processCurrentContent();
+      } else if (trimmedLine) {
+        currentContent.push(line);
       }
     }
   }
 
   // Handle any remaining content
-  if (inList && listContent.length > 0) {
-    currentChunk = [...listContent];
-  }
-  if (currentChunk.length > 0) {
-    addChunk(currentChunk);
+  if (currentContent.length > 0) {
+    addChunk(currentContent);
   }
 
   return chunks;
