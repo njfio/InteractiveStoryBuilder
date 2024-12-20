@@ -1,7 +1,7 @@
 import type { Express, Request } from 'express';
 import { createServer, type Server } from 'http';
 import { db } from '@db';
-import { manuscripts, chunks, users } from '@db/schema';
+import { manuscripts, chunks, images, users } from '@db/schema';
 import { createClient } from '@supabase/supabase-js';
 import { promises as fs } from 'fs';
 import { join } from 'path';
@@ -11,6 +11,7 @@ import EPub from 'epub-gen';
 import { requireAuth } from './middleware/auth';
 import { eq, sql } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
+import { generateImage } from './utils/image';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -66,53 +67,90 @@ export function registerRoutes(app: Express): Server {
     res.json(result);
   });
 
-  app.post('/api/manuscripts', requireAuth, async (req, res) => {
-    const { title, markdown } = req.body;
-    const user = req.user;
+  // Image Generation
+  app.post('/api/generate-image', requireAuth, async (req, res) => {
+    const { chunkId, prompt } = req.body;
 
-    if (!user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ message: 'No authorization header' });
+      }
+
+      const token = authHeader.split(' ')[1];
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+
+      if (error || !user) {
+        console.error('Auth error:', error);
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+
+      const chunk = await db.query.chunks.findFirst({
+        where: eq(chunks.id, chunkId),
+        with: {
+          manuscript: true,
+        },
+      });
+
+      if (!chunk) {
+        return res.status(404).json({ message: 'Chunk not found' });
+      }
+
+      if (chunk.manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      console.log(`Generating image for chunk ${chunkId} with prompt: ${prompt}`);
+
+      // Delete any existing images for this chunk
+      await db.delete(images).where(eq(images.chunkId, chunkId));
+
+      // Get the manuscript with its settings
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, chunk.manuscriptId),
+        columns: {
+          id: true,
+          imageSettings: true,
+          authorId: true,
+        },
+      });
+
+      console.log('Using manuscript settings:', manuscript?.imageSettings);
+
+      const imageUrl = await generateImage(
+        prompt || chunk.text,
+        manuscript?.imageSettings as any || {},
+        req.body.characterReferenceUrl
+      );
+
+      console.log('Creating image record in database');
+      const [image] = await db.insert(images).values({
+        manuscriptId: chunk.manuscriptId,
+        chunkId: chunk.id,
+        localPath: imageUrl,
+        promptParams: { prompt },
+      }).returning();
+
+      console.log('Image generated successfully:', image.id);
+      res.json({ ...image, imageUrl });
+    } catch (error) {
+      console.error('Error generating image:', error);
+      res.status(500).json({ message: 'Failed to generate image' });
     }
-
-    // Ensure user exists in our database
-    await db.insert(users).values({
-      id: user.id,
-      email: user.email,
-    }).onConflictDoNothing();
-
-    const parsedChunks = await parseMarkdown(markdown);
-
-    const [manuscript] = await db.insert(manuscripts).values({
-      title,
-      authorId: user.id,
-      originalMarkdown: markdown,
-    }).returning();
-
-    await db.insert(chunks).values(
-      parsedChunks.map(chunk => ({
-        manuscriptId: manuscript.id,
-        chunkOrder: chunk.order,
-        headingH1: chunk.headingH1,
-        text: chunk.text,
-      }))
-    );
-
-    res.json(manuscript);
   });
 
-  app.delete('/api/manuscripts/:id', requireAuth, async (req, res) => {
+  // Manuscript Settings
+  app.put('/api/manuscripts/:id/settings', requireAuth, async (req, res) => {
     try {
+      const { title, authorName, isPublic } = req.body;
       const user = req.user;
+
       if (!user) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
       const manuscript = await db.query.manuscripts.findFirst({
         where: eq(manuscripts.id, parseInt(req.params.id)),
-        columns: {
-          id: true,
-          authorId: true
-        }
       });
 
       if (!manuscript) {
@@ -120,22 +158,26 @@ export function registerRoutes(app: Express): Server {
       }
 
       if (manuscript.authorId !== user.id) {
-        return res.status(403).json({ message: 'Forbidden - you can only delete your own manuscripts' });
+        return res.status(403).json({ message: 'Forbidden' });
       }
 
-      // Delete the manuscript - cascade will handle related records
-      await db.delete(manuscripts)
-        .where(eq(manuscripts.id, manuscript.id));
+      const [updated] = await db
+        .update(manuscripts)
+        .set({ 
+          title,
+          authorName,
+          isPublic,
+          updatedAt: new Date()
+        })
+        .where(eq(manuscripts.id, manuscript.id))
+        .returning();
 
-      res.status(204).end();
+      res.json(updated);
     } catch (error) {
-      console.error('Error deleting manuscript:', error);
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : 'Failed to delete manuscript' 
-      });
+      console.error('Error updating manuscript settings:', error);
+      res.status(500).json({ message: 'Failed to update manuscript settings' });
     }
   });
-
   // Chunks
   app.get('/api/manuscripts/:id/chunks', async (req, res) => {
     console.time('chunks-query');
@@ -378,75 +420,6 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error updating manuscript settings:', error);
       res.status(500).json({ message: 'Failed to update manuscript settings' });
-    }
-  });
-
-  // Image Generation
-  app.post('/api/generate-image', async (req, res) => {
-    const { chunkId, prompt } = req.body;
-    
-    try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        return res.status(401).json({ message: 'No authorization header' });
-      }
-
-      const token = authHeader.split(' ')[1];
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      
-      if (error || !user) {
-        console.error('Auth error:', error);
-        return res.status(401).json({ message: 'Invalid token' });
-      }
-
-      const chunk = await db.query.chunks.findFirst({
-        where: eq(chunks.id, chunkId),
-        with: {
-          manuscript: true,
-        },
-      });
-
-      if (!chunk) {
-        return res.status(404).json({ message: 'Chunk not found' });
-      }
-
-      if (chunk.manuscript.authorId !== user.id) {
-        return res.status(403).json({ message: 'Forbidden' });
-      }
-
-      console.log(`Generating image for chunk ${chunkId} with prompt: ${prompt}`);
-
-      // Get the manuscript with its settings
-      const manuscript = await db.query.manuscripts.findFirst({
-        where: eq(manuscripts.id, chunk.manuscriptId),
-        columns: {
-          id: true,
-          imageSettings: true,
-          authorId: true,
-        },
-      });
-
-      console.log('Using manuscript settings:', manuscript?.imageSettings);
-
-      const imageUrl = await generateImage(
-        prompt || chunk.text,
-        manuscript?.imageSettings as any || {},
-        req.body.characterReferenceUrl
-      );
-
-      console.log('Creating image record in database');
-      const [image] = await db.insert(images).values({
-        manuscriptId: chunk.manuscriptId,
-        chunkId: chunk.id,
-        localPath: imageUrl,
-        promptParams: { prompt },
-      }).returning();
-
-      console.log('Image generated successfully:', image.id);
-      res.json({ ...image, imageUrl });
-    } catch (error) {
-      console.error('Error generating image:', error);
-      res.status(500).json({ message: 'Failed to generate image' });
     }
   });
 

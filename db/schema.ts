@@ -41,6 +41,17 @@ export const chunks = pgTable("chunks", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const images = pgTable("images", {
+  id: serial("id").primaryKey(),
+  manuscriptId: integer("manuscript_id").notNull().references(() => manuscripts.id, { onDelete: 'cascade' }),
+  chunkId: integer("chunk_id").notNull().references(() => chunks.id, { onDelete: 'cascade' }),
+  localPath: text("local_path").notNull(),
+  promptParams: jsonb("prompt_params").notNull(),
+  characterReferenceUrl: text("character_reference_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const manuscriptRelations = relations(manuscripts, ({ one, many }) => ({
   author: one(users, {
@@ -48,11 +59,24 @@ export const manuscriptRelations = relations(manuscripts, ({ one, many }) => ({
     references: [users.id],
   }),
   chunks: many(chunks),
+  images: many(images),
 }));
 
-export const chunkRelations = relations(chunks, ({ one }) => ({
+export const chunkRelations = relations(chunks, ({ one, many }) => ({
   manuscript: one(manuscripts, {
     fields: [chunks.manuscriptId],
+    references: [manuscripts.id],
+  }),
+  images: many(images),
+}));
+
+export const imageRelations = relations(images, ({ one }) => ({
+  chunk: one(chunks, {
+    fields: [images.chunkId],
+    references: [chunks.id],
+  }),
+  manuscript: one(manuscripts, {
+    fields: [images.manuscriptId],
     references: [manuscripts.id],
   }),
 }));
@@ -67,3 +91,5 @@ export type Manuscript = typeof manuscripts.$inferSelect;
 export type NewManuscript = typeof manuscripts.$inferInsert;
 export type Chunk = typeof chunks.$inferSelect;
 export type NewChunk = typeof chunks.$inferInsert;
+export type Image = typeof images.$inferSelect;
+export type NewImage = typeof images.$inferInsert;
