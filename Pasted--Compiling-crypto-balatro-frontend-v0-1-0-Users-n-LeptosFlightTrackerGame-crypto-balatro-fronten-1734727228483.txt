@@ -1,0 +1,151 @@
+   Compiling crypto-balatro-frontend v0.1.0 (/Users/n/LeptosFlightTrackerGame/crypto-balatro/frontend)
+warning: unused import: `std::sync::Arc`
+ --> src/game/game_manager.rs:5:5
+  |
+5 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: use of deprecated function `leptos::prelude::create_action`: This function is being removed to conform to Rust idioms. Please use `Action::new()` instead.
+  --> src/game/game_manager.rs:11:25
+   |
+11 |     let on_card_click = create_action(|card: &Card| {
+   |                         ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+error[E0277]: `()` is not a future
+    --> src/game/game_manager.rs:11:25
+     |
+11   |       let on_card_click = create_action(|card: &Card| {
+     |  _________________________^
+12   | |         log!("Selected card: {:?}", card);
+13   | |     });
+     | |______^ `()` is not a future
+     |
+     = help: the trait `Future` is not implemented for `()`
+note: required by a bound in `leptos::prelude::create_action`
+    --> /Users/n/.cargo/registry/src/index.crates.io-6f17d22bba15001f/reactive_graph-0.1.1/src/actions/action.rs:1078:9
+     |
+1073 | pub fn create_action<I, O, F, Fu>(action_fn: F) -> Action<I, O>
+     |        ------------- required by a bound in this function
+...
+1078 |     Fu: Future<Output = O> + Send + 'static,
+     |         ^^^^^^^^^^^^^^^^^^ required by this bound in `create_action`
+
+error[E0615]: attempted to take value of method `dispatch` on type `leptos::prelude::Action<Card, _>`
+  --> src/game/game_manager.rs:61:62
+   |
+61 | ...                   let dispatch = on_card_click.dispatch.clone();
+   |                                                    ^^^^^^^^ method, not a field
+   |
+help: use parentheses to call the method
+   |
+61 |                                 let dispatch = on_card_click.dispatch(_).clone();
+   |                                                                      +++
+
+error[E0615]: attempted to take value of method `dispatch` on type `leptos::prelude::Action<Card, _>`
+  --> src/game/game_manager.rs:78:62
+   |
+78 | ...                   let dispatch = on_card_click.dispatch.clone();
+   |                                                    ^^^^^^^^ method, not a field
+   |
+help: use parentheses to call the method
+   |
+78 |                                 let dispatch = on_card_click.dispatch(_).clone();
+   |                                                                      +++
+
+error[E0277]: expected a `FnMut(MouseEvent)` closure, found `Arc<dyn Fn() + Send + std::marker::Sync>`
+  --> src/components/card.rs:38:5
+   |
+38 | /     view! {
+39 | |         <div class={format!("card {}", suit_color)}
+40 | |              on:click=on_click>
+   | |              -- required by a bound introduced by this call
+41 | |             <div class="card-corner top-left">
+...  |
+52 | |         </div>
+53 | |     }
+   | |_____^ expected an `FnMut(MouseEvent)` closure, found `Arc<dyn Fn() + Send + std::marker::Sync>`
+   |
+   = help: the trait `FnMut(MouseEvent)` is not implemented for `Arc<dyn Fn() + Send + std::marker::Sync>`
+   = help: the trait `leptos::prelude::OnAttribute<E, F>` is implemented for `leptos::html::HtmlElement<El, At, Ch>`
+   = note: required for `HtmlElement<Div, (Class<String>,), ((HtmlElement<Div, (Class<...>,), ...>, ..., ...),)>` to implement `leptos::prelude::OnAttribute<click, Arc<dyn Fn() + Send + std::marker::Sync>>`
+   = note: the full name for the type has been written to '/Users/n/LeptosFlightTrackerGame/crypto-balatro/frontend/target/debug/deps/crypto_balatro_frontend.long-type-15253719236744496125.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: expected a `FnOnce(MouseEvent)` closure, found `Arc<dyn Fn() + Send + std::marker::Sync>`
+  --> src/components/card.rs:40:14
+   |
+40 |              on:click=on_click>
+   |              ^^ expected an `FnOnce(MouseEvent)` closure, found `Arc<dyn Fn() + Send + std::marker::Sync>`
+   |
+   = help: the trait `FnOnce(MouseEvent)` is not implemented for `Arc<dyn Fn() + Send + std::marker::Sync>`
+   = help: the trait `leptos::prelude::OnAttribute<E, F>` is implemented for `leptos::html::HtmlElement<El, At, Ch>`
+   = note: required for `HtmlElement<Div, (Class<String>,), ((HtmlElement<Div, (Class<...>,), ...>, ..., ...),)>` to implement `leptos::prelude::OnAttribute<click, Arc<dyn Fn() + Send + std::marker::Sync>>`
+   = note: the full name for the type has been written to '/Users/n/LeptosFlightTrackerGame/crypto-balatro/frontend/target/debug/deps/crypto_balatro_frontend.long-type-15253719236744496125.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `leptos::prelude::View<leptos::html::HtmlElement<leptos::html::Div, (Class<std::string::String>, On<click, Arc<dyn Fn() + Send + std::marker::Sync>>), ((leptos::html::HtmlElement<leptos::html::Div, (Class<leptos::tachys::view::static_types::Static<"card-corner top-left">>,), ((leptos::html::HtmlElement<leptos::html::Span, (Class<leptos::tachys::view::static_types::Static<"card-rank">>,), (&str,)>, leptos::html::HtmlElement<leptos::html::Span, (Class<leptos::tachys::view::static_types::Static<"card-suit">>,), (&str,)>),)>, leptos::html::HtmlElement<leptos::html::Div, (Class<leptos::tachys::view::static_types::Static<"card-center">>,), (&str,)>, leptos::html::HtmlElement<leptos::html::Div, (Class<leptos::tachys::view::static_types::Static<"card-corner bottom-right">>,), ((leptos::html::HtmlElement<leptos::html::Span, (Class<leptos::tachys::view::static_types::Static<"card-rank">>,), (&str,)>, leptos::html::HtmlElement<leptos::html::Span, (Class<leptos::tachys::view::static_types::Static<"card-suit">>,), (&str,)>),)>),)>>: leptos::IntoView` is not satisfied
+  --> src/components/card.rs:6:85
+   |
+6  |   pub fn CardView(card: Card, #[prop(into)] on_click: Arc<dyn Fn() + Send + Sync>) -> impl IntoView {
+   |                                                                                       ^^^^^^^^^^^^^ the trait `RenderHtml` is not implemented for `View<HtmlElement<Div, (Class<String>, On<click, Arc<dyn Fn() + Send + Sync>>), (...,)>>`
+...
+38 | /     view! {
+39 | |         <div class={format!("card {}", suit_color)}
+40 | |              on:click=on_click>
+41 | |             <div class="card-corner top-left">
+...  |
+52 | |         </div>
+53 | |     }
+   | |_____- return type was inferred to be `View<HtmlElement<Div, (Class<String>, On<click, Arc<dyn Fn() + Send + Sync>>), (...,)>>` here
+   |
+   = help: the trait `RenderHtml` is implemented for `leptos::prelude::View<T>`
+   = note: required for `View<HtmlElement<Div, (Class<String>, On<click, Arc<dyn Fn() + Send + Sync>>), (...,)>>` to implement `leptos::IntoView`
+   = note: the full name for the type has been written to '/Users/n/LeptosFlightTrackerGame/crypto-balatro/frontend/target/debug/deps/crypto_balatro_frontend.long-type-17892478583445920806.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `Arc<(dyn Fn() + Send + std::marker::Sync + 'static)>: From<Arc<dyn Fn(Card) + Send + std::marker::Sync>>` is not satisfied
+  --> src/components/pages/home.rs:11:5
+   |
+11 | /     view! {
+12 | |         <div class="home-page">
+13 | |             <h1>"Welcome to CryptoBalatro"</h1>
+14 | |             <p>"A blockchain-based card game where strategy meets crypto."</p>
+...  |
+18 | |                     on_click=empty_callback
+   | |                     -------- -------------- this tail expression is of type `Arc<dyn Fn(Card) + Send + Sync>`
+   | |                     |
+   | |                     required by a bound introduced by this call
+...  |
+25 | |         </div>
+26 | |     }
+   | |_____^ the trait `From<Arc<dyn Fn(Card) + Send + std::marker::Sync>>` is not implemented for `Arc<(dyn Fn() + Send + std::marker::Sync + 'static)>`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `Arc<B>` implements `From<Cow<'_, B>>`
+             `Arc<CStr>` implements `From<&CStr>`
+             `Arc<CStr>` implements `From<&mut CStr>`
+             `Arc<CStr>` implements `From<CString>`
+             `Arc<OsStr>` implements `From<&OsStr>`
+             `Arc<OsStr>` implements `From<&mut OsStr>`
+             `Arc<OsStr>` implements `From<OsString>`
+             `Arc<T, A>` implements `From<Box<T, A>>`
+           and 16 others
+   = note: required for `Arc<dyn Fn(Card) + Send + std::marker::Sync>` to implement `Into<Arc<(dyn Fn() + Send + std::marker::Sync + 'static)>>`
+note: required by a bound in `CardViewPropsBuilder::<(__card, ())>::on_click`
+  --> src/components/card.rs:5:1
+   |
+5  | #[component]
+   | ^^^^^^^^^^^^ required by this bound in `CardViewPropsBuilder::<(__card, ())>::on_click`
+6  | pub fn CardView(card: Card, #[prop(into)] on_click: Arc<dyn Fn() + Send + Sync>) -> impl IntoView {
+   |                                           -------- required by a bound in this associated function
+   = note: this error originates in the derive macro `::leptos::typed_builder_macro::TypedBuilder` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0277, E0615.
+For more information about an error, try `rustc --explain E0277`.
+warning: `crypto-balatro-frontend` (lib) generated 2 warnings
+error: could not compile `crypto-balatro-frontend` (lib) due to 7 previous errors; 2 warnings emitted
+bash-3.2$ 

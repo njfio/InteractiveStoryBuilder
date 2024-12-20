@@ -12,76 +12,95 @@ interface AuthState {
   loading: boolean;
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
-  checkSession: () => Promise<boolean>;
 }
 
+// Create the auth store with basic state management
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
   setUser: (user) => set({ user }),
   setLoading: (loading) => set({ loading }),
-  checkSession: async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
+}));
+
+// Initialize auth state and set up listener
+const initAuth = async () => {
+  try {
+    // Check initial session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      useAuthStore.setState({
+        user: {
+          id: session.user.id,
+          email: session.user.email,
+        },
+        loading: false,
+      });
+    } else {
+      useAuthStore.setState({ user: null, loading: false });
+    }
+
+    // Listen for auth changes
+    supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        set({
+        useAuthStore.setState({
           user: {
             id: session.user.id,
             email: session.user.email,
           },
-          loading: false
+          loading: false,
         });
-        return true;
+      } else {
+        useAuthStore.setState({ user: null, loading: false });
       }
-      set({ user: null, loading: false });
-      return false;
-    } catch (error) {
-      console.error('Error checking session:', error);
-      set({ user: null, loading: false });
-      return false;
-    }
-  }
-}));
-
-// Set up auth state change subscription
-supabase.auth.onAuthStateChange((_event, session) => {
-  if (session?.user) {
-    useAuthStore.setState({
-      user: {
-        id: session.user.id,
-        email: session.user.email
-      },
-      loading: false
     });
-  } else {
+  } catch (error) {
+    console.error('Auth initialization error:', error);
     useAuthStore.setState({ user: null, loading: false });
   }
-});
+};
+
+// Initialize auth immediately
+initAuth();
 
 export const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Sign in error:', error);
+    throw error;
+  }
 };
 
 export const signUp = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: window.location.origin + '/login'
-    }
-  });
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin + '/login'
+      }
+    });
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Sign up error:', error);
+    throw error;
+  }
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    console.error('Sign out error:', error);
+    throw error;
+  }
 };
 
 export const requireAuth = () => {
