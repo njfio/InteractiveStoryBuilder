@@ -31,10 +31,6 @@ export const parseMarkdown = async (
     const text = lines.join('\n').trim();
     if (!text) return;
 
-    // Check if chunk meets minimum line requirement
-    const nonEmptyLines = text.split('\n').filter(line => line.trim()).length;
-    const minLines = settings.minLines || 2;
-
     // Only force bypass for H1 headers
     if (force && text.startsWith('# ')) {
       chunks.push({
@@ -46,6 +42,9 @@ export const parseMarkdown = async (
     }
 
     // All other content must meet minimum line requirement
+    const nonEmptyLines = text.split('\n').filter(line => line.trim()).length;
+    const minLines = settings.minLines || 2;
+
     if (nonEmptyLines >= minLines) {
       chunks.push({
         headingH1: currentH1,
@@ -62,6 +61,7 @@ export const parseMarkdown = async (
 
     // Handle headings
     if (trimmedLine.startsWith('#')) {
+      // Add any accumulated content before processing the heading
       if (currentChunk.length > 0) {
         addChunk(currentChunk);
         currentChunk = [];
@@ -72,26 +72,11 @@ export const parseMarkdown = async (
         addChunk([line], true);
       } else {
         currentChunk = [line];
-        let paragraphComplete = false;
         let j = i + 1;
 
-        // Accumulate lines until we have a complete paragraph
-        while (j < lines.length && !paragraphComplete) {
-          const nextLine = lines[j].trim();
-
-          // Stop at next heading or if we hit a blank line after meeting min lines
-          if (nextLine.startsWith('#')) {
-            break;
-          }
-
+        // Accumulate content until we have enough lines or hit another heading
+        while (j < lines.length && !lines[j].trim().startsWith('#')) {
           currentChunk.push(lines[j]);
-
-          // Check if we've met minimum lines and hit a paragraph boundary
-          const nonEmptyLines = currentChunk.filter(l => l.trim()).length;
-          if (nonEmptyLines >= (settings.minLines || 2) && !nextLine) {
-            paragraphComplete = true;
-          }
-
           j++;
         }
 
@@ -151,27 +136,24 @@ export const parseMarkdown = async (
 
     // Handle paragraphs and blank lines
     if (!trimmedLine) {
-      if (currentChunk.length > 0) {
-        // Only add chunk if we're not in a list or if lists aren't being preserved
-        if (!inList || !settings.preserveLists) {
+      if (currentChunk.length > 0 && (!inList || !settings.preserveLists)) {
+        const nonEmptyLines = currentChunk.filter(l => l.trim()).length;
+        if (nonEmptyLines >= (settings.minLines || 2)) {
           addChunk(currentChunk);
           currentChunk = [];
         }
       }
     } else {
-      // Continue accumulating content for the current chunk
-      if (currentChunk.length === 0 || currentChunk[currentChunk.length - 1].trim()) {
-        currentChunk.push(line);
-      } else {
-        // If we hit a blank line and have enough content, create a new chunk
-        addChunk(currentChunk);
-        currentChunk = [line];
-      }
+      currentChunk.push(line);
 
-      // Look ahead to see if we have a complete paragraph
-      if (!nextLine && currentChunk.length > 0) {
-        addChunk(currentChunk);
-        currentChunk = [];
+      // Look ahead to see if we're at a natural paragraph boundary
+      // and have enough content for a chunk
+      if (!nextLine) {
+        const nonEmptyLines = currentChunk.filter(l => l.trim()).length;
+        if (nonEmptyLines >= (settings.minLines || 2)) {
+          addChunk(currentChunk);
+          currentChunk = [];
+        }
       }
     }
   }
