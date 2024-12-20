@@ -94,7 +94,7 @@ export const parseMarkdown = async (
     }
 
     // Handle paragraphs and other block content
-    if (node.type === 'paragraph' || node.type === 'code' || node.type === 'list') {
+    if (node.type === 'paragraph' || node.type === 'code' || node.type === 'blockquote') {
       // If there's a gap between the last node and this one, preserve it
       if (currentChunkStart < start.line - 1) {
         const gap = lines.slice(currentChunkStart, start.line - 1);

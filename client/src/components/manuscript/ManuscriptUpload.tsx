@@ -102,75 +102,79 @@ export function ManuscriptUpload() {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Upload Manuscript</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="My Novel" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="space-y-4">
+    <div className="max-h-[80vh] overflow-y-auto">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Upload Manuscript</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="markdown"
+                name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Content (Markdown)</FormLabel>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <div className="space-y-4">
-                        <MarkdownEditor
-                          value={field.value}
-                          onChange={field.onChange}
-                          onEditorMount={setEditorView}
-                          className="min-h-[400px] border rounded-md"
-                        />
-
-                        {field.value && (
-                          <Card className="mt-4">
-                            <CardContent className="pt-6">
-                              <ChunkPreview 
-                                markdown={field.value}
-                                onChange={setCurrentChunks}
-                                onChunkSelect={handleChunkSelect}
-                              />
-                            </CardContent>
-                          </Card>
-                        )}
-                      </div>
+                      <Input placeholder="My Novel" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
 
-            <Button type="submit" disabled={isUploading}>
-              {isUploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                'Upload Manuscript'
-              )}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="markdown"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Content (Markdown)</FormLabel>
+                      <FormControl>
+                        <div className="space-y-4">
+                          <MarkdownEditor
+                            value={field.value}
+                            onChange={field.onChange}
+                            onEditorMount={setEditorView}
+                            className="min-h-[300px] max-h-[400px] border rounded-md"
+                          />
+
+                          {field.value && (
+                            <Card>
+                              <CardContent className="pt-6">
+                                <ChunkPreview 
+                                  markdown={field.value}
+                                  onChange={setCurrentChunks}
+                                  onChunkSelect={handleChunkSelect}
+                                />
+                              </CardContent>
+                            </Card>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="sticky bottom-0 bg-background pt-4">
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload Manuscript'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
