@@ -102,7 +102,7 @@ export function ManuscriptUpload() {
   };
 
   return (
-    <div className="max-h-[80vh] overflow-y-auto">
+    <div className="max-h-[88vh] overflow-y-auto">
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Upload Manuscript</CardTitle>
@@ -137,7 +137,7 @@ export function ManuscriptUpload() {
                             value={field.value}
                             onChange={field.onChange}
                             onEditorMount={setEditorView}
-                            className="min-h-[300px] max-h-[400px] border rounded-md"
+                            className="min-h-[330px] max-h-[440px] border rounded-md"
                           />
 
                           {field.value && (

@@ -183,7 +183,7 @@ export function ChunkPreview({ markdown, onChange, onChunkSelect }: ChunkPreview
           </div>
         </div>
 
-        <ScrollArea className="h-[400px] pr-4">
+        <ScrollArea className="h-[440px] pr-4">
           <Accordion
             type="multiple"
             value={expandedItems}
