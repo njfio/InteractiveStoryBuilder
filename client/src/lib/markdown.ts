@@ -2,7 +2,6 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import { visit } from 'unist-util-visit';
-import { Node } from 'unist';
 
 interface ChunkData {
   headingH1?: string;
@@ -17,33 +16,17 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
 
   const ast = await processor.parse(markdown);
   const chunks: ChunkData[] = [];
-  let chunkOrder = 0;
   let currentH1: string | undefined;
+  let chunkOrder = 0;
 
-  // Split markdown into lines for exact preservation
+  // Split markdown into lines for exact text preservation
   const lines = markdown.split('\n');
+  let currentChunkStart = 0;
+  let currentChunkLines: string[] = [];
 
-  // Track current chunk building
-  let currentLines: string[] = [];
-  let processedLines = new Set<number>();
-
-  // Function to get exact text from line numbers
-  const getExactText = (start: number, end: number): string => {
-    // Only get lines we haven't processed yet
-    const textLines = [];
-    for (let i = start - 1; i < end; i++) {
-      if (!processedLines.has(i)) {
-        textLines.push(lines[i]);
-        processedLines.add(i);
-      }
-    }
-    return textLines.join('\n');
-  };
-
-  // Function to save current chunk
-  const saveChunk = () => {
-    if (currentLines.length > 0) {
-      const text = currentLines.join('\n').trim();
+  const saveCurrentChunk = () => {
+    if (currentChunkLines.length > 0) {
+      const text = currentChunkLines.join('\n').trim();
       if (text) {
         chunks.push({
           headingH1: currentH1,
@@ -51,66 +34,73 @@ export const parseMarkdown = async (markdown: string): Promise<ChunkData[]> => {
           order: chunkOrder++
         });
       }
-      currentLines = [];
+      currentChunkLines = [];
     }
   };
 
-  // First pass: Mark all heading positions
-  const headings = new Map<number, { depth: number; node: any }>();
-  visit(ast, 'heading', (node: any) => {
-    if (node.position) {
-      headings.set(node.position.start.line, { depth: node.depth, node });
-    }
-  });
-
-  // Second pass: Process content with awareness of heading boundaries
-  let lastNodeEnd = 0;
+  // Process nodes
   visit(ast, (node: any) => {
     if (!node.position) return;
-    const start = node.position.start.line;
-    const end = node.position.end.line;
 
-    // Skip if we've already processed these lines
-    if ([...processedLines].some(line => line >= start - 1 && line < end)) {
-      return;
-    }
+    const { start, end } = node.position;
+    const nodeLines = lines.slice(start.line - 1, end.line);
 
-    // Handle headings specially
+    // Handle headers
     if (node.type === 'heading') {
-      // Always save current chunk before a heading
-      saveChunk();
+      // Save current chunk before starting a new one at header
+      saveCurrentChunk();
 
-      const headingText = node.children.map((child: any) => child.value).join('').trim();
+      const headerText = nodeLines.join('\n');
 
       if (node.depth === 1) {
-        currentH1 = headingText;
+        // For H1, update current H1 and create a chunk for the header itself
+        currentH1 = headerText.replace(/^#\s+/, '').trim();
+        chunks.push({
+          headingH1: currentH1,
+          text: headerText,
+          order: chunkOrder++
+        });
       } else {
-        // For non-H1 headings, include them in the chunk with proper markdown syntax
-        currentLines.push(`${'#'.repeat(node.depth)} ${headingText}`);
+        // For other headers, start a new chunk with the header
+        currentChunkLines = [headerText];
       }
-
+      currentChunkStart = end.line;
       return;
     }
 
-    // Add content to current chunk
-    const text = getExactText(start, end);
-    if (text.trim()) {
-      if (currentLines.length > 0) {
-        currentLines.push(''); // Add blank line between content blocks
+    // Handle paragraphs and other block content
+    if (node.type === 'paragraph' || node.type === 'code' || node.type === 'list') {
+      // If there's a gap between the last node and this one, preserve it
+      if (currentChunkStart < start.line - 1) {
+        const gap = lines.slice(currentChunkStart, start.line - 1);
+        if (gap.some(line => line.trim())) {
+          currentChunkLines.push(...gap);
+        }
       }
-      currentLines.push(text);
 
-      // Check if we should create a new chunk
+      currentChunkLines.push(...nodeLines);
+
+      // Only create new chunks for standalone paragraphs
       if (node.type === 'paragraph' && !node.parent?.type?.match(/list|blockquote/)) {
-        saveChunk();
+        saveCurrentChunk();
       }
-    }
 
-    lastNodeEnd = end;
+      currentChunkStart = end.line;
+    }
   });
 
-  // Save final chunk
-  saveChunk();
+  // Save any remaining content
+  saveCurrentChunk();
+
+  // Handle any trailing content
+  const remainingLines = lines.slice(currentChunkStart);
+  if (remainingLines.some(line => line.trim())) {
+    chunks.push({
+      headingH1: currentH1,
+      text: remainingLines.join('\n').trim(),
+      order: chunkOrder++
+    });
+  }
 
   return chunks;
 };
