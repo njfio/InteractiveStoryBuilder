@@ -163,7 +163,7 @@ export function registerRoutes(app: Express): Server {
 
       const [updated] = await db
         .update(manuscripts)
-        .set({ 
+        .set({
           title,
           authorName,
           isPublic,
@@ -193,6 +193,13 @@ export function registerRoutes(app: Express): Server {
           text: true,
         },
         with: {
+          images: {
+            columns: {
+              localPath: true,
+            },
+            limit: 1,
+            orderBy: (images, { desc }) => [desc(images.createdAt)],
+          },
           manuscript: {
             columns: {
               id: true,
@@ -205,8 +212,14 @@ export function registerRoutes(app: Express): Server {
         orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
       });
 
+      // Transform the results to include imageUrl from the most recent image
+      const chunksWithImages = results.map(chunk => ({
+        ...chunk,
+        imageUrl: chunk.images?.[0]?.localPath
+      }));
+
       console.timeEnd('chunks-query');
-      res.json(results);
+      res.json(chunksWithImages);
     } catch (error) {
       console.error('Error fetching chunks:', error);
       res.status(500).json({ message: 'Failed to fetch chunks' });
@@ -239,7 +252,7 @@ export function registerRoutes(app: Express): Server {
       // Update the chunk
       const [updatedChunk] = await db
         .update(chunks)
-        .set({ 
+        .set({
           text,
           chunkOrder: order,
           updatedAt: new Date()
@@ -291,7 +304,7 @@ export function registerRoutes(app: Express): Server {
       const mergedText = `${chunk1.text}\n\n${chunk2.text}`;
       const [updatedChunk] = await db
         .update(chunks)
-        .set({ 
+        .set({
           text: mergedText,
           updatedAt: new Date()
         })
@@ -304,8 +317,8 @@ export function registerRoutes(app: Express): Server {
       // Reorder remaining chunks
       await db
         .update(chunks)
-        .set({ 
-          chunkOrder: sql`${chunks.chunkOrder} - 1` 
+        .set({
+          chunkOrder: sql`${chunks.chunkOrder} - 1`
         })
         .where(sql`${chunks.chunkOrder} > ${chunk2.chunkOrder}`);
 
@@ -351,15 +364,15 @@ export function registerRoutes(app: Express): Server {
       // Increment order of all chunks after this one
       await db
         .update(chunks)
-        .set({ 
-          chunkOrder: sql`${chunks.chunkOrder} + 1` 
+        .set({
+          chunkOrder: sql`${chunks.chunkOrder} + 1`
         })
         .where(sql`${chunks.chunkOrder} > ${chunk.chunkOrder}`);
 
       // Update original chunk with first part
       const [updatedChunk1] = await db
         .update(chunks)
-        .set({ 
+        .set({
           text: chunk.text.slice(0, splitPoint),
           updatedAt: new Date()
         })
@@ -407,7 +420,7 @@ export function registerRoutes(app: Express): Server {
 
       const [updated] = await db
         .update(manuscripts)
-        .set({ 
+        .set({
           title,
           authorName,
           isPublic,
@@ -518,7 +531,7 @@ export function registerRoutes(app: Express): Server {
 
       const token = authHeader.split(' ')[1];
       const { data: { user }, error } = await supabase.auth.getUser(token);
-      
+
       if (error || !user) {
         console.error('Auth error:', error);
         return res.status(401).json({ message: 'Invalid token' });
@@ -557,7 +570,7 @@ export function registerRoutes(app: Express): Server {
 
       const token = authHeader.split(' ')[1];
       const { data: { user }, error } = await supabase.auth.getUser(token);
-      
+
       if (error || !user) {
         console.error('Auth error:', error);
         return res.status(401).json({ message: 'Invalid token' });
@@ -619,7 +632,7 @@ export function registerRoutes(app: Express): Server {
         }
       }
 
-      res.status(202).json({ 
+      res.status(202).json({
         message: 'Image generation started',
         totalChunks: chunksToGenerate.length
       });
@@ -699,9 +712,9 @@ export function registerRoutes(app: Express): Server {
       });
 
       console.log(`Found ${chunksWithImages.length} chunks`);
-      
+
       console.log('Starting manuscript export process...');
-      
+
       const execAsync = promisify(exec);
       const tmpDir = '/tmp';
 
@@ -738,35 +751,35 @@ export function registerRoutes(app: Express): Server {
       // Compile content from chunks
       let content = `# ${manuscript.title}\n\n`;
       let currentChapter: string | null = null;
-      
+
       for (const chunk of chunksWithImages) {
         // Only add chapter heading if it's different from the current one
         if (chunk.headingH1 && chunk.headingH1 !== currentChapter) {
           content += `# ${chunk.headingH1}\n\n`;
           currentChapter = chunk.headingH1;
         }
-        
+
         // Add subheading if present
         if (chunk.headingH2 && chunk.headingH2 !== chunk.text) {
           content += `## ${chunk.headingH2}\n\n`;
         }
-        
+
         // Add the chunk text, but skip if it matches the heading
         if (chunk.text !== chunk.headingH1 && chunk.text !== chunk.headingH2) {
           content += `${chunk.text}\n\n`;
         }
-        
+
         // Handle image if exists
         if (chunk.images?.[0]?.localPath) {
           const sourceImagePath = join(process.cwd(), 'public', chunk.images[0].localPath);
           const imageFilename = chunk.images[0].localPath.split('/').pop();
           const targetImagePath = join(exportDir, 'images', imageFilename!);
-          
+
           try {
             await fs.copyFile(sourceImagePath, targetImagePath);
             // Get public URL once for both markdown and docx
             const publicUrl = getPublicUrl(req);
-            
+
             if (format === 'markdown') {
               // For markdown, use the full URL path
               content += `![Generated illustration](${publicUrl}${chunk.images[0].localPath})\n\n`;
@@ -794,14 +807,14 @@ export function registerRoutes(app: Express): Server {
         case 'epub':
           console.log('Starting EPUB generation...');
           const epubFilePath = join(tmpDir, `${sanitizedTitle}.epub`);
-          
+
           try {
             console.log('Configuring EPUB generator...');
             // Group chunks by chapter for EPUB
             let currentChapterContent = '';
             let chapters = [];
             let lastChapter = null;
-            
+
             for (const chunk of chunksWithImages) {
               if (chunk.headingH1 && chunk.headingH1 !== lastChapter) {
                 if (lastChapter) {
@@ -813,20 +826,20 @@ export function registerRoutes(app: Express): Server {
                 }
                 lastChapter = chunk.headingH1;
               }
-              
+
               if (chunk.headingH2 && chunk.headingH2 !== chunk.text) {
                 currentChapterContent += `<h2>${chunk.headingH2}</h2>\n`;
               }
-              
+
               if (chunk.text !== chunk.headingH1 && chunk.text !== chunk.headingH2) {
                 currentChapterContent += `<p>${chunk.text}</p>\n`;
               }
-              
+
               if (chunk.images?.[0]?.localPath) {
                 const sourceImagePath = join(process.cwd(), 'public', chunk.images[0].localPath);
                 const imageFilename = chunk.images[0].localPath.split('/').pop();
                 const targetImagePath = join(exportDir, 'images', imageFilename!);
-                
+
                 try {
                   await fs.copyFile(sourceImagePath, targetImagePath);
                   currentChapterContent += `<img src="../images/${imageFilename}" alt="Generated illustration" class="chapter-image"/>`;
@@ -835,7 +848,7 @@ export function registerRoutes(app: Express): Server {
                 }
               }
             }
-            
+
             // Add the last chapter
             if (lastChapter && currentChapterContent) {
               chapters.push({
@@ -843,13 +856,13 @@ export function registerRoutes(app: Express): Server {
                 data: currentChapterContent
               });
             }
-            
+
             // Create EPUB structure
             const epubContentDir = join(exportDir, 'OEBPS');
             const epubImagesDir = join(epubContentDir, 'images');
             await fs.mkdir(epubContentDir, { recursive: true });
             await fs.mkdir(epubImagesDir, { recursive: true });
-            
+
             // Copy images to EPUB content directory
             for (const chunk of chunksWithImages) {
               if (chunk.images?.[0]?.localPath) {
@@ -863,18 +876,18 @@ export function registerRoutes(app: Express): Server {
                 }
               }
             }
-            
+
             const epub = new EPub({
               title: manuscript.title,
               content: chapters,
               tempDir: exportDir,
               contentDir: 'OEBPS'
             }, epubFilePath);
-            
+
             console.log('Generating EPUB file...');
             await epub.promise;
             console.log('EPUB generation completed successfully');
-            
+
             res.download(epubFilePath, `${sanitizedTitle}.epub`, () => {
               console.log('EPUB download completed, cleaning up...');
               cleanupFiles(exportDir, epubFilePath);
@@ -890,16 +903,16 @@ export function registerRoutes(app: Express): Server {
           console.log('Starting DOCX conversion...');
           const inputFile = join(exportDir, `${sanitizedTitle}.md`);
           const outputFile = join(exportDir, `${sanitizedTitle}.docx`);
-          
+
           try {
             console.log('Writing markdown content to temporary file...');
             await fs.writeFile(inputFile, content);
-            
+
             console.log('Converting markdown to DOCX using pandoc with images...');
             // Use pandoc with the correct working directory to ensure images are found
             await execAsync(`cd "${exportDir}" && pandoc "${sanitizedTitle}.md" -o "${sanitizedTitle}.docx" --standalone`);
             console.log('DOCX conversion completed successfully');
-            
+
             res.download(outputFile, `${sanitizedTitle}.docx`, () => {
               console.log('DOCX download completed, cleaning up...');
               cleanupFiles(exportDir);
@@ -913,8 +926,8 @@ export function registerRoutes(app: Express): Server {
       }
     } catch (error) {
       console.error('Export error:', error);
-      res.status(500).json({ 
-        message: (error as Error).message || 'Failed to export manuscript' 
+      res.status(500).json({
+        message: (error as Error).message || 'Failed to export manuscript'
       });
     }
   });
