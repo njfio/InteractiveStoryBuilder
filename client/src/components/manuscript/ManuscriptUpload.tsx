@@ -13,6 +13,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -45,17 +51,14 @@ export function ManuscriptUpload() {
       const position = content.indexOf(chunkText);
 
       if (position !== -1) {
-        // Convert position to line and column
         const beforeText = content.substring(0, position);
         const lines = beforeText.split('\n');
         const line = lines.length - 1;
         const col = lines[lines.length - 1].length;
 
-        // Create selection range
         const from = editorView.state.doc.line(line + 1).from + col;
         const to = from + chunkText.length;
 
-        // Update selection and scroll into view
         editorView.dispatch({
           selection: { anchor: from, head: to },
           effects: EditorView.scrollIntoView(from)
@@ -101,79 +104,75 @@ export function ManuscriptUpload() {
   };
 
   return (
-    <div className="max-h-[88vh] overflow-y-auto p-4 sm:p-6 md:p-8">
-      <Card className="w-full mx-auto" style={{ maxWidth: '1400px' }}>
-        <CardHeader>
-          <CardTitle>Upload Manuscript</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <Dialog>
+      <DialogContent className="w-[90vw] max-w-[1400px] h-[90vh] overflow-y-auto">
+        <DialogTitle>Upload Manuscript</DialogTitle>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder="My Novel" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-4">
               <FormField
                 control={form.control}
-                name="title"
+                name="markdown"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title</FormLabel>
+                    <FormLabel>Content (Markdown)</FormLabel>
                     <FormControl>
-                      <Input placeholder="My Novel" {...field} />
+                      <div className="space-y-4">
+                        <MarkdownEditor
+                          value={field.value}
+                          onChange={field.onChange}
+                          onEditorMount={setEditorView}
+                          className="min-h-[330px] max-h-[440px] border rounded-md w-full"
+                        />
+
+                        {field.value && (
+                          <Card className="w-full">
+                            <CardContent className="pt-6">
+                              <ChunkPreview 
+                                markdown={field.value}
+                                onChange={setCurrentChunks}
+                                onChunkSelect={handleChunkSelect}
+                              />
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
 
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="markdown"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Content (Markdown)</FormLabel>
-                      <FormControl>
-                        <div className="space-y-4">
-                          <MarkdownEditor
-                            value={field.value}
-                            onChange={field.onChange}
-                            onEditorMount={setEditorView}
-                            className="min-h-[330px] max-h-[440px] border rounded-md w-full"
-                          />
-
-                          {field.value && (
-                            <Card className="w-full">
-                              <CardContent className="pt-6">
-                                <ChunkPreview 
-                                  markdown={field.value}
-                                  onChange={setCurrentChunks}
-                                  onChunkSelect={handleChunkSelect}
-                                />
-                              </CardContent>
-                            </Card>
-                          )}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="sticky bottom-0 bg-background pt-4">
-                <Button type="submit" disabled={isUploading}>
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    'Upload Manuscript'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+            <div className="sticky bottom-0 bg-background pt-4">
+              <Button type="submit" disabled={isUploading}>
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  'Upload Manuscript'
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
