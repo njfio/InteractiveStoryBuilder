@@ -11,11 +11,12 @@ interface ChunkData {
 interface ChunkSettings {
   preserveLists?: boolean;
   minLines?: number;
+  paragraphsPerChunk?: number;
 }
 
 export const parseMarkdown = async (
   markdown: string,
-  settings: ChunkSettings = { preserveLists: true, minLines: 2 }
+  settings: ChunkSettings = { preserveLists: true, minLines: 2, paragraphsPerChunk: 1 }
 ): Promise<ChunkData[]> => {
   const chunks: ChunkData[] = [];
   let currentH1: string | undefined;
@@ -26,6 +27,7 @@ export const parseMarkdown = async (
   let currentChunk: string[] = [];
   let inList = false;
   let inCodeBlock = false;
+  let paragraphCount = 0;
 
   const addChunk = (lines: string[], force = false) => {
     const text = lines.join('\n').trim();
@@ -65,24 +67,14 @@ export const parseMarkdown = async (
       if (currentChunk.length > 0) {
         addChunk(currentChunk);
         currentChunk = [];
+        paragraphCount = 0;
       }
 
       if (trimmedLine.startsWith('# ')) {
         currentH1 = trimmedLine.replace(/^#\s+/, '');
         addChunk([line], true);
       } else {
-        currentChunk = [line];
-        let j = i + 1;
-
-        // Accumulate content until we have enough lines or hit another heading
-        while (j < lines.length && !lines[j].trim().startsWith('#')) {
-          currentChunk.push(lines[j]);
-          j++;
-        }
-
-        addChunk(currentChunk);
-        currentChunk = [];
-        i = j - 1;
+        addChunk([line], true);
       }
       continue;
     }
@@ -93,6 +85,7 @@ export const parseMarkdown = async (
         if (currentChunk.length > 0) {
           addChunk(currentChunk);
           currentChunk = [];
+          paragraphCount = 0;
         }
         inCodeBlock = true;
         currentChunk = [line];
@@ -101,6 +94,7 @@ export const parseMarkdown = async (
         currentChunk.push(line);
         addChunk(currentChunk);
         currentChunk = [];
+        paragraphCount = 0;
       }
       continue;
     }
@@ -117,6 +111,7 @@ export const parseMarkdown = async (
         if (currentChunk.length > 0) {
           addChunk(currentChunk);
           currentChunk = [];
+          paragraphCount = 0;
         }
         inList = true;
       }
@@ -130,6 +125,7 @@ export const parseMarkdown = async (
         inList = false;
         addChunk(currentChunk);
         currentChunk = [];
+        paragraphCount = 0;
       }
       continue;
     }
@@ -137,22 +133,30 @@ export const parseMarkdown = async (
     // Handle paragraphs and blank lines
     if (!trimmedLine) {
       if (currentChunk.length > 0 && (!inList || !settings.preserveLists)) {
-        const nonEmptyLines = currentChunk.filter(l => l.trim()).length;
-        if (nonEmptyLines >= (settings.minLines || 2)) {
+        // Check if we've accumulated enough paragraphs for a chunk
+        const maxParagraphs = settings.paragraphsPerChunk || 1;
+        paragraphCount++;
+
+        if (paragraphCount >= maxParagraphs) {
           addChunk(currentChunk);
           currentChunk = [];
+          paragraphCount = 0;
         }
       }
     } else {
+      // Continue accumulating content for the current chunk
       currentChunk.push(line);
 
-      // Look ahead to see if we're at a natural paragraph boundary
-      // and have enough content for a chunk
+      // Look ahead to see if we're at a paragraph boundary
       if (!nextLine) {
         const nonEmptyLines = currentChunk.filter(l => l.trim()).length;
-        if (nonEmptyLines >= (settings.minLines || 2)) {
+        const maxParagraphs = settings.paragraphsPerChunk || 1;
+        paragraphCount++;
+
+        if (paragraphCount >= maxParagraphs && nonEmptyLines >= (settings.minLines || 2)) {
           addChunk(currentChunk);
           currentChunk = [];
+          paragraphCount = 0;
         }
       }
     }
