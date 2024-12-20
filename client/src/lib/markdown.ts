@@ -29,15 +29,21 @@ export const parseMarkdown = async (
 
   // Split markdown into lines for exact text preservation
   const lines = markdown.split('\n');
-  let currentChunkStart = 0;
   let currentChunkLines: string[] = [];
   let inList = false;
   let isCodeBlock = false;
 
+  const isValidChunk = (text: string): boolean => {
+    if (!text.trim()) return false;
+    if (!settings.minLines) return true;
+    const nonEmptyLines = text.split('\n').filter(line => line.trim()).length;
+    return nonEmptyLines >= settings.minLines;
+  };
+
   const saveCurrentChunk = () => {
     if (currentChunkLines.length > 0) {
       const text = currentChunkLines.join('\n').trim();
-      if (text && (!settings.minLines || text.split('\n').filter(line => line.trim()).length >= settings.minLines)) {
+      if (isValidChunk(text)) {
         chunks.push({
           headingH1: currentH1,
           text,
@@ -54,65 +60,74 @@ export const parseMarkdown = async (
 
     const { start, end } = node.position;
     const nodeLines = lines.slice(start.line - 1, end.line);
+    const nodeText = nodeLines.join('\n');
+
+    // Handle headings first
+    if (node.type === 'heading') {
+      saveCurrentChunk();
+      if (node.depth === 1) {
+        currentH1 = nodeText.replace(/^#\s+/, '').trim();
+        chunks.push({
+          headingH1: currentH1,
+          text: nodeText,
+          order: chunkOrder++
+        });
+      } else {
+        // Other headings start new chunks
+        currentChunkLines = [nodeText];
+      }
+      return;
+    }
 
     // Handle code blocks
     if (node.type === 'code') {
-      isCodeBlock = true;
       saveCurrentChunk();
-      chunks.push({
-        headingH1: currentH1,
-        text: nodeLines.join('\n'),
-        order: chunkOrder++
-      });
-      isCodeBlock = false;
-      currentChunkStart = end.line;
-      return;
-    }
-
-    // Handle lists if preserveLists is enabled
-    if (settings.preserveLists && (node.type === 'list' || node.parent?.type === 'list')) {
-      if (!inList) {
-        saveCurrentChunk(); // Save any pending content before the list
-        inList = true;
+      if (isValidChunk(nodeText)) {
+        chunks.push({
+          headingH1: currentH1,
+          text: nodeText,
+          order: chunkOrder++
+        });
       }
-      currentChunkLines.push(...nodeLines);
       return;
     }
 
-    // End list context if we're not in a list anymore
+    // Handle lists based on preserveLists setting
+    if (node.type === 'list' || node.parent?.type === 'list') {
+      if (settings.preserveLists) {
+        if (!inList) {
+          saveCurrentChunk();
+          inList = true;
+        }
+        currentChunkLines.push(...nodeLines);
+      } else {
+        // If not preserving lists, treat each list item as potential chunk
+        if (isValidChunk(nodeText)) {
+          saveCurrentChunk();
+          currentChunkLines = nodeLines;
+          saveCurrentChunk();
+        }
+      }
+      return;
+    }
+
+    // End list context
     if (inList && node.type !== 'list' && node.parent?.type !== 'list') {
       inList = false;
       saveCurrentChunk();
     }
 
-    // Handle headers
-    if (node.type === 'heading') {
-      saveCurrentChunk();
-      const headerText = nodeLines.join('\n');
-
-      if (node.depth === 1) {
-        currentH1 = headerText.replace(/^#\s+/, '').trim();
-        chunks.push({
-          headingH1: currentH1,
-          text: headerText,
-          order: chunkOrder++
-        });
-      } else {
-        currentChunkLines = [headerText];
-      }
-      currentChunkStart = end.line;
-      return;
-    }
-
-    // Handle block content
-    if (node.type === 'paragraph' || node.type === 'blockquote') {
-      // Only process root-level blocks
-      if (!node.parent || node.parent.type === 'root') {
-        if (!inList && !isCodeBlock) {
-          saveCurrentChunk();
+    // Handle paragraphs and other block content
+    if ((node.type === 'paragraph' || node.type === 'blockquote') && 
+        (!node.parent || node.parent.type === 'root')) {
+      if (!inList) {
+        saveCurrentChunk();
+        if (isValidChunk(nodeText)) {
           currentChunkLines = nodeLines;
           saveCurrentChunk();
-          currentChunkStart = end.line;
+        } else {
+          // Accumulate content until we reach minLines
+          currentChunkLines.push(...nodeLines);
         }
       }
     }
@@ -120,19 +135,6 @@ export const parseMarkdown = async (
 
   // Save any remaining content
   saveCurrentChunk();
-
-  // Handle any trailing content
-  const remainingLines = lines.slice(currentChunkStart);
-  if (remainingLines.some(line => line.trim())) {
-    const text = remainingLines.join('\n').trim();
-    if (!settings.minLines || text.split('\n').filter(line => line.trim()).length >= settings.minLines) {
-      chunks.push({
-        headingH1: currentH1,
-        text,
-        order: chunkOrder++
-      });
-    }
-  }
 
   return chunks;
 };
