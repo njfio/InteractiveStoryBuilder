@@ -48,7 +48,7 @@ export const parseMarkdown = async (
     const nonEmptyLines = text.split('\n').filter(line => line.trim()).length;
     const minLines = settings.minLines || 2;
 
-    if (nonEmptyLines >= minLines) {
+    if (nonEmptyLines >= minLines || inList) {
       chunks.push({
         headingH1: currentH1,
         text,
@@ -68,6 +68,17 @@ export const parseMarkdown = async (
     return /^\s+/.test(line) || isListStart(line); // Indented content or new list items
   };
 
+  const processCurrentParagraph = () => {
+    if (currentChunk.length > 0) {
+      paragraphCount++;
+      if (paragraphCount >= (settings.paragraphsPerChunk || 1)) {
+        addChunk(currentChunk);
+        currentChunk = [];
+        paragraphCount = 0;
+      }
+    }
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmedLine = line.trim();
@@ -76,17 +87,16 @@ export const parseMarkdown = async (
     // Handle headings
     if (trimmedLine.startsWith('#')) {
       if (inList) {
-        // Finish current list before handling heading
-        currentChunk.push(...listContent);
+        // Complete the current list
+        currentChunk = [...listContent];
         addChunk(currentChunk);
         currentChunk = [];
         listContent = [];
         inList = false;
-        paragraphCount = 0;
       } else if (currentChunk.length > 0) {
+        processCurrentParagraph();
         addChunk(currentChunk);
         currentChunk = [];
-        paragraphCount = 0;
       }
 
       if (trimmedLine.startsWith('# ')) {
@@ -95,6 +105,7 @@ export const parseMarkdown = async (
       } else {
         addChunk([line], true);
       }
+      paragraphCount = 0;
       continue;
     }
 
@@ -102,12 +113,13 @@ export const parseMarkdown = async (
     if (trimmedLine.startsWith('```')) {
       if (!inCodeBlock) {
         if (inList) {
-          currentChunk.push(...listContent);
+          currentChunk = [...listContent];
           addChunk(currentChunk);
           currentChunk = [];
           listContent = [];
           inList = false;
         } else if (currentChunk.length > 0) {
+          processCurrentParagraph();
           addChunk(currentChunk);
           currentChunk = [];
         }
@@ -119,6 +131,7 @@ export const parseMarkdown = async (
           currentChunk = [];
         }
       }
+      paragraphCount = 0;
       continue;
     }
 
@@ -127,26 +140,26 @@ export const parseMarkdown = async (
       continue;
     }
 
-    // Handle lists and content
+    // Handle lists and paragraphs
     if (settings.preserveLists) {
       if (isListStart(line) && !inList) {
-        // Start new list
+        // Start new list after completing current paragraph
         if (currentChunk.length > 0) {
+          processCurrentParagraph();
           addChunk(currentChunk);
           currentChunk = [];
-          paragraphCount = 0;
         }
         inList = true;
         listContent = [line];
       } else if (inList) {
-        // Continue list if it's a list continuation or empty line
+        // Continue list
         if (isListContinuation(line) || !trimmedLine) {
           listContent.push(line);
 
           // Check if list is ending
           const nextNonEmptyLine = lines.slice(i + 1).find(l => l.trim());
           if (!nextNonEmptyLine || (!isListContinuation(nextNonEmptyLine) && !isListStart(nextNonEmptyLine))) {
-            // List is ending, add it as a complete chunk
+            // Add the complete list as a chunk
             currentChunk = [...listContent];
             addChunk(currentChunk);
             currentChunk = [];
@@ -165,41 +178,29 @@ export const parseMarkdown = async (
         }
       } else {
         // Handle regular paragraphs
-        if (!trimmedLine && currentChunk.length > 0) {
-          currentChunk.push(line);
-          paragraphCount++;
-          if (paragraphCount >= (settings.paragraphsPerChunk || 1)) {
-            addChunk(currentChunk);
-            currentChunk = [];
-            paragraphCount = 0;
+        if (!trimmedLine) {
+          if (currentChunk.length > 0) {
+            currentChunk.push(line);
+            processCurrentParagraph();
           }
-        } else if (trimmedLine) {
+        } else {
           currentChunk.push(line);
-          paragraphCount++;
-          if (paragraphCount >= (settings.paragraphsPerChunk || 1)) {
-            addChunk(currentChunk);
-            currentChunk = [];
-            paragraphCount = 0;
+          if (!nextLine) {
+            processCurrentParagraph();
           }
         }
       }
     } else {
       // When not preserving lists, treat everything as regular content
-      if (!trimmedLine && currentChunk.length > 0) {
-        currentChunk.push(line);
-        paragraphCount++;
-        if (paragraphCount >= (settings.paragraphsPerChunk || 1)) {
-          addChunk(currentChunk);
-          currentChunk = [];
-          paragraphCount = 0;
+      if (!trimmedLine) {
+        if (currentChunk.length > 0) {
+          currentChunk.push(line);
+          processCurrentParagraph();
         }
-      } else if (trimmedLine) {
+      } else {
         currentChunk.push(line);
-        paragraphCount++;
-        if (paragraphCount >= (settings.paragraphsPerChunk || 1)) {
-          addChunk(currentChunk);
-          currentChunk = [];
-          paragraphCount = 0;
+        if (!nextLine) {
+          processCurrentParagraph();
         }
       }
     }
