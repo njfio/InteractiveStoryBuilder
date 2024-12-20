@@ -48,8 +48,8 @@ export const parseMarkdown = async (
     return trimmed.startsWith('#');
   };
 
-  // Note: Be careful with the apostrophe in "What's" to match exactly what appears in the input.
-  const isPreviewMarker = (line: string) => line.trim() === "Preview of What's to Come:";
+  // Note: Be careful with the apostrophe in "What’s" to match exactly what appears in the input.
+  const isPreviewMarker = (line: string) => line.trim() === "Preview of What’s to Come:";
 
   const isListItem = (line: string) => {
     const trimmed = line.trim();
