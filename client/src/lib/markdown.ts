@@ -72,16 +72,29 @@ export const parseMarkdown = async (
         addChunk([line], true);
       } else {
         currentChunk = [line];
-        // Accumulate content after subheadings until minimum lines are met
+        let paragraphComplete = false;
         let j = i + 1;
-        while (j < lines.length && currentChunk.length < (settings.minLines || 2) * 2) {
-          if (!lines[j].trim().startsWith('#')) {
-            currentChunk.push(lines[j]);
-          } else {
+
+        // Accumulate lines until we have a complete paragraph
+        while (j < lines.length && !paragraphComplete) {
+          const nextLine = lines[j].trim();
+
+          // Stop at next heading or if we hit a blank line after meeting min lines
+          if (nextLine.startsWith('#')) {
             break;
           }
+
+          currentChunk.push(lines[j]);
+
+          // Check if we've met minimum lines and hit a paragraph boundary
+          const nonEmptyLines = currentChunk.filter(l => l.trim()).length;
+          if (nonEmptyLines >= (settings.minLines || 2) && !nextLine) {
+            paragraphComplete = true;
+          }
+
           j++;
         }
+
         addChunk(currentChunk);
         currentChunk = [];
         i = j - 1;
@@ -138,16 +151,25 @@ export const parseMarkdown = async (
 
     // Handle paragraphs and blank lines
     if (!trimmedLine) {
-      if (currentChunk.length > 0 && (!inList || !settings.preserveLists)) {
-        addChunk(currentChunk);
-        currentChunk = [];
+      if (currentChunk.length > 0) {
+        // Only add chunk if we're not in a list or if lists aren't being preserved
+        if (!inList || !settings.preserveLists) {
+          addChunk(currentChunk);
+          currentChunk = [];
+        }
       }
     } else {
       // Continue accumulating content for the current chunk
-      currentChunk.push(line);
+      if (currentChunk.length === 0 || currentChunk[currentChunk.length - 1].trim()) {
+        currentChunk.push(line);
+      } else {
+        // If we hit a blank line and have enough content, create a new chunk
+        addChunk(currentChunk);
+        currentChunk = [line];
+      }
 
-      // Look ahead to see if we have a paragraph boundary
-      if (!nextLine) {
+      // Look ahead to see if we have a complete paragraph
+      if (!nextLine && currentChunk.length > 0) {
         addChunk(currentChunk);
         currentChunk = [];
       }
