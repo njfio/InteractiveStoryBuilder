@@ -101,8 +101,8 @@ export function ManuscriptUpload() {
   };
 
   return (
-    <div className="max-h-[88vh] overflow-y-auto">
-      <Card className="w-full max-w-[1200px] mx-auto">
+    <div className="max-h-[88vh] overflow-y-auto p-4 sm:p-6 md:p-8">
+      <Card className="w-full mx-auto" style={{ maxWidth: '1400px' }}>
         <CardHeader>
           <CardTitle>Upload Manuscript</CardTitle>
         </CardHeader>
@@ -136,11 +136,11 @@ export function ManuscriptUpload() {
                             value={field.value}
                             onChange={field.onChange}
                             onEditorMount={setEditorView}
-                            className="min-h-[330px] max-h-[440px] border rounded-md"
+                            className="min-h-[330px] max-h-[440px] border rounded-md w-full"
                           />
 
                           {field.value && (
-                            <Card>
+                            <Card className="w-full">
                               <CardContent className="pt-6">
                                 <ChunkPreview 
                                   markdown={field.value}
