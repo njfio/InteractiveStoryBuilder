@@ -5,13 +5,14 @@ import { ChunkView } from '@/components/manuscript/ChunkView';
 import { useAuthStore } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 import { ExportDialog } from '@/components/manuscript/ExportDialog';
+import { supabase } from '@/lib/supabase';
 
 interface Chunk {
   id: number;
   manuscriptId: number;
   headingH1?: string;
-  headingH2?: string;
   text: string;
+  chunkOrder: number;
   imageUrl?: string;
   manuscript: {
     id: number;
@@ -35,48 +36,66 @@ interface Manuscript {
   authorId: string;
   author?: {
     email: string;
+    displayName?: string;
   };
 }
 
 export function Reader() {
   const [, params] = useRoute('/reader/:id');
   const [, setLocation] = useLocation();
-  const { user } = useAuthStore();
+  const { user, initialize } = useAuthStore();
   const [activeChunk, setActiveChunk] = useState<Chunk | null>(null);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
+
+  // Check auth status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      await initialize();
+      setIsAuthChecked(true);
+
+      if (!session) {
+        setLocation('/login');
+      }
+    };
+
+    checkAuth();
+  }, [initialize, setLocation]);
 
   // Query manuscript data
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<Manuscript>({
     queryKey: [`/api/manuscripts/${params?.id}`],
-    enabled: !!params?.id,
+    enabled: !!params?.id && isAuthChecked && !!user,
   });
 
   // Query chunks data
   const { data: chunks = [], isLoading: isLoadingChunks } = useQuery<Chunk[]>({
     queryKey: [`/api/manuscripts/${params?.id}/chunks`],
-    enabled: !!params?.id && !!manuscript,
+    enabled: !!params?.id && !!manuscript && isAuthChecked && !!user,
   });
 
   // Sync active chunk with URL
   useEffect(() => {
+    if (!chunks.length) return;
+
     const searchParams = new URLSearchParams(window.location.search);
     const chunkId = searchParams.get('chunk');
-    
-    if (chunks.length > 0) {
-      if (chunkId) {
-        const parsedId = parseInt(chunkId);
-        const chunk = chunks.find(c => c.id === parsedId);
-        if (chunk && chunk !== activeChunk) {
-          setActiveChunk(chunk);
-        }
-      } else if (!activeChunk) {
-        // Set first chunk as default
-        setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
-        setActiveChunk(chunks[0]);
+
+    if (chunkId) {
+      const parsedId = parseInt(chunkId);
+      const chunk = chunks.find(c => c.id === parsedId);
+      if (chunk && chunk !== activeChunk) {
+        setActiveChunk(chunk);
       }
+    } else {
+      // Set first chunk as default
+      setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
+      setActiveChunk(chunks[0]);
     }
   }, [chunks, params?.id, setLocation, activeChunk]);
 
-  if (isLoadingManuscript || isLoadingChunks) {
+  // Show loading state while checking auth or loading data
+  if (!isAuthChecked || isLoadingManuscript || isLoadingChunks) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -84,6 +103,12 @@ export function Reader() {
     );
   }
 
+  // Handle unauthorized access
+  if (!user) {
+    return null;
+  }
+
+  // Handle missing manuscript or chunks
   if (!manuscript || !chunks.length) {
     setLocation('/');
     return null;
@@ -111,7 +136,7 @@ export function Reader() {
             <ExportDialog manuscriptId={manuscript.id} title={manuscript.title} />
           </div>
           <p className="text-muted-foreground">
-            by {manuscript.author?.email || 'Anonymous'}
+            by {manuscript.author?.displayName || manuscript.author?.email || 'Anonymous'}
           </p>
         </header>
 
