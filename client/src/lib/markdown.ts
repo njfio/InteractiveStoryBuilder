@@ -31,13 +31,11 @@ export const parseMarkdown = async (
   const lines = markdown.split('\n');
   let currentChunkLines: string[] = [];
   let inList = false;
-  let isCodeBlock = false;
 
   const isValidChunk = (text: string): boolean => {
     if (!text.trim()) return false;
-    if (!settings.minLines) return true;
     const nonEmptyLines = text.split('\n').filter(line => line.trim()).length;
-    return nonEmptyLines >= settings.minLines;
+    return nonEmptyLines >= (settings.minLines || 1);
   };
 
   const saveCurrentChunk = () => {
@@ -62,7 +60,7 @@ export const parseMarkdown = async (
     const nodeLines = lines.slice(start.line - 1, end.line);
     const nodeText = nodeLines.join('\n');
 
-    // Handle headings first
+    // Handle headings
     if (node.type === 'heading') {
       saveCurrentChunk();
       if (node.depth === 1) {
@@ -73,7 +71,6 @@ export const parseMarkdown = async (
           order: chunkOrder++
         });
       } else {
-        // Other headings start new chunks
         currentChunkLines = [nodeText];
       }
       return;
@@ -92,7 +89,7 @@ export const parseMarkdown = async (
       return;
     }
 
-    // Handle lists based on preserveLists setting
+    // Handle lists
     if (node.type === 'list' || node.parent?.type === 'list') {
       if (settings.preserveLists) {
         if (!inList) {
@@ -101,11 +98,13 @@ export const parseMarkdown = async (
         }
         currentChunkLines.push(...nodeLines);
       } else {
-        // If not preserving lists, treat each list item as potential chunk
+        saveCurrentChunk();
         if (isValidChunk(nodeText)) {
-          saveCurrentChunk();
-          currentChunkLines = nodeLines;
-          saveCurrentChunk();
+          chunks.push({
+            headingH1: currentH1,
+            text: nodeText,
+            order: chunkOrder++
+          });
         }
       }
       return;
@@ -118,15 +117,16 @@ export const parseMarkdown = async (
     }
 
     // Handle paragraphs and other block content
-    if ((node.type === 'paragraph' || node.type === 'blockquote') && 
-        (!node.parent || node.parent.type === 'root')) {
+    if (node.type === 'paragraph' || node.type === 'blockquote') {
       if (!inList) {
         saveCurrentChunk();
         if (isValidChunk(nodeText)) {
-          currentChunkLines = nodeLines;
-          saveCurrentChunk();
+          chunks.push({
+            headingH1: currentH1,
+            text: nodeText,
+            order: chunkOrder++
+          });
         } else {
-          // Accumulate content until we reach minLines
           currentChunkLines.push(...nodeLines);
         }
       }
