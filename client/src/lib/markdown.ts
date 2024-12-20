@@ -32,6 +32,7 @@ export const parseMarkdown = async (
   let currentChunkStart = 0;
   let currentChunkLines: string[] = [];
   let inList = false;
+  let isCodeBlock = false;
 
   const saveCurrentChunk = () => {
     if (currentChunkLines.length > 0) {
@@ -54,7 +55,21 @@ export const parseMarkdown = async (
     const { start, end } = node.position;
     const nodeLines = lines.slice(start.line - 1, end.line);
 
-    // Handle lists specially if preserveLists is enabled
+    // Handle code blocks
+    if (node.type === 'code') {
+      isCodeBlock = true;
+      saveCurrentChunk();
+      chunks.push({
+        headingH1: currentH1,
+        text: nodeLines.join('\n'),
+        order: chunkOrder++
+      });
+      isCodeBlock = false;
+      currentChunkStart = end.line;
+      return;
+    }
+
+    // Handle lists if preserveLists is enabled
     if (settings.preserveLists && (node.type === 'list' || node.parent?.type === 'list')) {
       if (!inList) {
         saveCurrentChunk(); // Save any pending content before the list
@@ -90,13 +105,15 @@ export const parseMarkdown = async (
     }
 
     // Handle block content
-    if (node.type === 'paragraph' || node.type === 'code' || node.type === 'blockquote') {
+    if (node.type === 'paragraph' || node.type === 'blockquote') {
       // Only process root-level blocks
       if (!node.parent || node.parent.type === 'root') {
-        saveCurrentChunk();
-        currentChunkLines = nodeLines;
-        saveCurrentChunk();
-        currentChunkStart = end.line;
+        if (!inList && !isCodeBlock) {
+          saveCurrentChunk();
+          currentChunkLines = nodeLines;
+          saveCurrentChunk();
+          currentChunkStart = end.line;
+        }
       }
     }
   });
