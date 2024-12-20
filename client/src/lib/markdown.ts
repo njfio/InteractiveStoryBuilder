@@ -93,8 +93,13 @@ export const parseMarkdown = async (
       return;
     }
 
-    // Handle paragraphs and other block content
+    // Handle block content (paragraphs, code blocks, blockquotes)
     if (node.type === 'paragraph' || node.type === 'code' || node.type === 'blockquote') {
+      // Only save the current chunk if we're not in a nested context
+      if (!node.parent || node.parent.type === 'root') {
+        saveCurrentChunk();
+      }
+
       // If there's a gap between the last node and this one, preserve it
       if (currentChunkStart < start.line - 1) {
         const gap = lines.slice(currentChunkStart, start.line - 1);
@@ -105,8 +110,8 @@ export const parseMarkdown = async (
 
       currentChunkLines.push(...nodeLines);
 
-      // Only create new chunks for standalone paragraphs
-      if (node.type === 'paragraph' && !node.parent?.type?.match(/list|blockquote/)) {
+      // Only create new chunks for standalone blocks
+      if (!node.parent || node.parent.type === 'root') {
         saveCurrentChunk();
       }
 

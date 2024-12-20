@@ -103,7 +103,7 @@ export function ManuscriptUpload() {
 
   return (
     <div className="max-h-[88vh] overflow-y-auto">
-      <Card className="w-full">
+      <Card className="w-full max-w-[900px] mx-auto">
         <CardHeader>
           <CardTitle>Upload Manuscript</CardTitle>
         </CardHeader>
