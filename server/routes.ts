@@ -50,7 +50,7 @@ export function registerRoutes(app: Express): Server {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          version: "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+          version: "7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc",
           input: {
             prompt: prompt || chunk.text,
             negative_prompt: "blurry, bad anatomy, bad hands, cropped, worst quality",
@@ -654,9 +654,37 @@ async function parseMarkdown(markdown: string) {
 }
 
 async function generateImage(prompt: string, settings: any, characterReferenceUrl: string | null): Promise<string> {
-  // Replace this with your actual image generation logic
-  // This is a placeholder that just returns a dummy URL
-  return `/images/dummy-image-${Math.random()}.jpg`;
+  if (!process.env.REPLICATE_API_TOKEN) {
+    throw new Error('REPLICATE_API_TOKEN not configured');
+  }
+
+  // Call Replicate API for image generation
+  const response = await fetch('https://api.replicate.com/v1/predictions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      version: "7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc",
+      input: {
+        prompt,
+        negative_prompt: "blurry, bad anatomy, bad hands, cropped, worst quality",
+        num_inference_steps: 50,
+        guidance_scale: 7.5,
+      }
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Replicate API error: ${response.statusText}`);
+  }
+
+  const prediction = await response.json();
+  console.log('Image generation started:', prediction);
+
+  // Return the generated image URL
+  return prediction.output?.[0] || null;
 }
 
 function getPublicUrl(req: any): string {
