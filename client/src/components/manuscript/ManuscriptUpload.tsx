@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Edit2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarkdownEditor } from './MarkdownEditor';
 import { ChunkPreview } from './ChunkPreview';
@@ -38,6 +38,7 @@ export function ManuscriptUpload() {
   const [currentChunks, setCurrentChunks] = useState<any[]>([]);
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [open, setOpen] = useState(false);
+  const [isEditingChunks, setIsEditingChunks] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -160,10 +161,22 @@ export function ManuscriptUpload() {
                   <div className="flex-1">
                     <Card className="h-full">
                       <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-medium">Preview & Edit</h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsEditingChunks(!isEditingChunks)}
+                          >
+                            <Edit2 className="h-4 w-4 mr-2" />
+                            {isEditingChunks ? 'View Mode' : 'Edit Chunks'}
+                          </Button>
+                        </div>
                         <ChunkPreview 
                           markdown={form.watch('markdown')}
                           onChange={setCurrentChunks}
                           onChunkSelect={handleChunkSelect}
+                          enableEditing={isEditingChunks}
                         />
                       </CardContent>
                     </Card>
