@@ -27,6 +27,7 @@ export const parseMarkdown = async (
   let currentChunk: string[] = [];
   let paragraphCount = 0;
   let inCodeBlock = false;
+  let inList = false;
 
   const addChunk = (lines: string[], force = false) => {
     const text = lines.join('\n').trim();
@@ -102,7 +103,37 @@ export const parseMarkdown = async (
       continue;
     }
 
-    // Handle paragraphs and blank lines
+    // Check for list items
+    const isListItem = /^[-*+]|\d+\./.test(trimmedLine);
+
+    // Start of a list
+    if (isListItem && !inList && settings.preserveLists) {
+      if (currentChunk.length > 0) {
+        addChunk(currentChunk);
+        currentChunk = [];
+      }
+      inList = true;
+    }
+
+    // Inside a list
+    if (inList && settings.preserveLists) {
+      currentChunk.push(line);
+
+      // Check if list is ending
+      if (!nextLine || (!nextLine.match(/^[-*+]|\d+\./) && !isListItem)) {
+        const followingNonEmptyLine = lines.slice(i + 1).find(l => l.trim());
+        if (!followingNonEmptyLine?.match(/^[-*+]|\d+\./)) {
+          inList = false;
+          if (currentChunk.length > 0) {
+            addChunk(currentChunk);
+            currentChunk = [];
+          }
+        }
+      }
+      continue;
+    }
+
+    // Handle regular paragraphs and blank lines
     if (!trimmedLine) {
       // Always preserve the blank line in the current chunk
       currentChunk.push(line);
