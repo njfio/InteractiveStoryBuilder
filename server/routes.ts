@@ -62,6 +62,16 @@ export function registerRoutes(app: Express): Server {
       const results = await db.query.chunks.findMany({
         where: eq(chunks.manuscriptId, parseInt(req.params.id)),
         orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
+        columns: {
+          id: true,
+          manuscriptId: true,
+          headingH1: true,
+          text: true,
+          chunkOrder: true,
+          imageUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        },
         with: {
           manuscript: {
             columns: {
@@ -923,7 +933,6 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Add these routes after the existing manuscript routes
-
   // Update manuscript title
   app.put('/api/manuscripts/:id/title', requireAuth, async (req, res) => {
     try {
