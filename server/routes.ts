@@ -43,7 +43,13 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/manuscripts', async (req, res) => {
     const results = await db.query.manuscripts.findMany({
       with: {
-        author: true,
+        author: {
+          columns: {
+            id: true,
+            email: true,
+            displayName: true,
+          },
+        },
       },
     });
     res.json(results);
@@ -951,6 +957,69 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ 
         message: (error as Error).message || 'Failed to export manuscript' 
       });
+    }
+  });
+
+  // Add these routes after the existing manuscript routes
+
+  // Update manuscript title
+  app.put('/api/manuscripts/:id/title', requireAuth, async (req, res) => {
+    try {
+      const { title } = req.body;
+      const user = req.user;
+
+      if (!user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.id)),
+      });
+
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      if (manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      const [updated] = await db
+        .update(manuscripts)
+        .set({ 
+          title,
+          updatedAt: new Date()
+        })
+        .where(eq(manuscripts.id, manuscript.id))
+        .returning();
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating manuscript title:', error);
+      res.status(500).json({ message: 'Failed to update manuscript title' });
+    }
+  });
+
+  // Update user display name
+  app.put('/api/users/display-name', requireAuth, async (req, res) => {
+    try {
+      const { displayName } = req.body;
+      const user = req.user;
+
+      if (!user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const [updated] = await db
+        .update(users)
+        .set({ displayName })
+        .where(eq(users.id, user.id))
+        .returning();
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating display name:', error);
+      res.status(500).json({ message: 'Failed to update display name' });
     }
   });
 

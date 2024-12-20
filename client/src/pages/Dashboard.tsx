@@ -7,13 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuth } from '@/lib/auth';
-import { Loader2, Book, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Loader2, Book, Image as ImageIcon, Trash2, User } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -26,6 +28,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
+const displayNameSchema = z.object({
+  displayName: z.string().min(2, "Display name must be at least 2 characters"),
+});
 
 export function Dashboard() {
   const [, setLocation] = useLocation();
@@ -33,6 +52,13 @@ export function Dashboard() {
   const queryClient = useQueryClient();
   const [showUpload, setShowUpload] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const form = useForm<z.infer<typeof displayNameSchema>>({
+    resolver: zodResolver(displayNameSchema),
+    defaultValues: {
+      displayName: "",
+    },
+  });
+
 
   // Check authentication
   if (!requireAuth()) {
@@ -113,6 +139,44 @@ export function Dashboard() {
     },
   });
 
+  const updateDisplayName = useMutation({
+    mutationFn: async (displayName: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Please sign in to update display name');
+      }
+
+      const response = await fetch('/api/users/display-name', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ displayName }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update display name');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manuscripts'] });
+      toast({
+        title: 'Success',
+        description: 'Display name updated successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -126,22 +190,58 @@ export function Dashboard() {
       <div className="flex justify-between items-center">
         <h1 className="text-4xl font-bold">Your Manuscripts</h1>
         <Button onClick={() => setShowUpload(true)}>Upload New</Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="ml-4">
+              <User className="mr-2 h-4 w-4" />
+              Set Display Name
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Set Display Name</DialogTitle>
+              <DialogDescription>
+                Choose how your name will appear to other users
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit((data) => updateDisplayName.mutate(data.displayName))}>
+                <FormField
+                  control={form.control}
+                  name="displayName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Display Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your display name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter className="mt-4">
+                  <Button type="submit" disabled={updateDisplayName.isPending}>
+                    {updateDisplayName.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      <Dialog open={showUpload} onOpenChange={setShowUpload}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Upload Manuscript</DialogTitle>
-          </DialogHeader>
-          <ManuscriptUpload />
-        </DialogContent>
-      </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {manuscripts?.map((manuscript: any) => (
           <Card key={manuscript.id}>
             <CardHeader>
               <CardTitle className="text-xl">{manuscript.title}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                By {manuscript.author.displayName || manuscript.author.email}
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between">

@@ -4,7 +4,8 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey(),
-  email: text("email").unique().notNull(),
+  email: text("email").notNull(),  
+  displayName: text("display_name"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -66,17 +67,13 @@ export const manuscriptRelations = relations(manuscripts, ({ one, many }) => ({
     references: [users.id],
   }),
   chunks: many(chunks),
-  images: many(images),
-  seoMetadata: many(seoMetadata),
 }));
 
-export const chunkRelations = relations(chunks, ({ one, many }) => ({
+export const chunkRelations = relations(chunks, ({ one }) => ({
   manuscript: one(manuscripts, {
     fields: [chunks.manuscriptId],
     references: [manuscripts.id],
   }),
-  images: many(images),
-  seoMetadata: many(seoMetadata),
 }));
 
 export const imageRelations = relations(images, ({ one }) => ({
@@ -95,6 +92,8 @@ export type Manuscript = typeof manuscripts.$inferSelect;
 export type NewManuscript = typeof manuscripts.$inferInsert;
 export type Chunk = typeof chunks.$inferSelect;
 export type NewChunk = typeof chunks.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 export type Image = typeof images.$inferSelect;
 export type NewImage = typeof images.$inferInsert;
 export type SeoMetadata = typeof seoMetadata.$inferSelect;
