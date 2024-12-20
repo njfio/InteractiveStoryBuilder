@@ -42,7 +42,7 @@ export const parseMarkdown = async (
   };
 
   const isListMarker = (line: string) => {
-    return /^[-*+]|\d+\./.test(line.trim());
+    return /^[\s]*[-*+]|\d+\./.test(line.trim());
   };
 
   const isBlankLine = (line: string) => line.trim() === '';
@@ -79,19 +79,17 @@ export const parseMarkdown = async (
           currentChunk = [];
         }
         inList = true;
-        currentChunk.push(line);
-        continue;
       }
 
-      // Continue collecting list content (including blank lines)
       if (inList) {
-        // End list only if we hit a new header or a non-empty non-list line
-        if (!isBlankLine(line) && !isListMarker(line) && !line.startsWith(' ')) {
+        currentChunk.push(line);
+        // Only end list if we hit a new header or clearly non-list content
+        // (not blank lines or indented content)
+        const nextLine = i < lines.length - 1 ? lines[i + 1] : null;
+        if (nextLine && !isBlankLine(nextLine) && !nextLine.startsWith(' ') && !isListMarker(nextLine)) {
           addChunk(currentChunk);
-          currentChunk = [line];
+          currentChunk = [];
           inList = false;
-        } else {
-          currentChunk.push(line);
         }
         continue;
       }
