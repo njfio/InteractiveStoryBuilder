@@ -42,27 +42,32 @@ interface Manuscript {
 export function Reader() {
   const [, params] = useRoute('/reader/:id');
   const [, setLocation] = useLocation();
-  const { user, loading } = useAuthStore();
+  const { user, loading: authLoading } = useAuthStore();
   const [activeChunk, setActiveChunk] = useState<Chunk | null>(null);
   const manuscriptId = params?.id ? parseInt(params.id) : NaN;
 
-  // Redirect if not authenticated
+  // Handle authentication
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       setLocation('/login');
     }
-  }, [loading, user, setLocation]);
+  }, [authLoading, user, setLocation]);
+
+  // If not authenticated or still loading auth, show nothing
+  if (authLoading || !user) {
+    return null;
+  }
 
   // Query manuscript data
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<Manuscript>({
     queryKey: [`/api/manuscripts/${manuscriptId}`],
-    enabled: !isNaN(manuscriptId) && !!user,
+    enabled: !isNaN(manuscriptId),
   });
 
   // Query chunks data
   const { data: chunks = [], isLoading: isLoadingChunks } = useQuery<Chunk[]>({
     queryKey: [`/api/manuscripts/${manuscriptId}/chunks`],
-    enabled: !isNaN(manuscriptId) && !!manuscript && !!user,
+    enabled: !isNaN(manuscriptId) && !!manuscript,
   });
 
   // Handle chunk navigation
@@ -86,7 +91,7 @@ export function Reader() {
   }, [chunks, manuscriptId, setLocation, activeChunk]);
 
   // Show loading state
-  if (loading || isLoadingManuscript || isLoadingChunks) {
+  if (isLoadingManuscript || isLoadingChunks) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -95,7 +100,7 @@ export function Reader() {
   }
 
   // Handle missing manuscript or chunks after loading
-  if (!loading && (!manuscript || !chunks.length)) {
+  if (!manuscript || !chunks.length) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
@@ -108,7 +113,7 @@ export function Reader() {
 
   // Use active chunk or default to first chunk
   const currentChunk = activeChunk || chunks[0];
-  const isAuthor = user?.id === manuscript?.authorId;
+  const isAuthor = user.id === manuscript.authorId;
 
   const handleChunkChange = (chunkId: number) => {
     const newChunk = chunks.find(c => c.id === chunkId);

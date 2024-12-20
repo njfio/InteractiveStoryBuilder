@@ -1,76 +1,84 @@
-import type { Express, Request } from 'express';
+import type { Express } from 'express';
 import { createServer, type Server } from 'http';
 import { db } from '@db';
-import { manuscripts, chunks, images, seoMetadata, users } from '@db/schema';
-import { createClient } from '@supabase/supabase-js';
-import { promises as fs } from 'fs';
-import { join } from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import EPub from 'epub-gen';
-
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY!
-);
-
-// Helper function to get the public URL
-function getPublicUrl(req: Request): string {
-  // For Replit: use the request host
-  const host = req.get('host') || 'localhost:5000';
-  const protocol = req.protocol || 'http';
-  return `${protocol}://${host}`;
-}
+import { manuscripts, users, chunks } from '@db/schema';
+import { eq } from 'drizzle-orm';
 import { requireAuth } from './middleware/auth';
-import { eq, sql } from 'drizzle-orm';
-import { parseMarkdown } from '../client/src/lib/markdown';
-import { generateImage } from './utils/image';
-
-// Extend Express Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email: string;
-      }
-    }
-  }
-}
 
 export function registerRoutes(app: Express): Server {
   // Manuscripts
-  app.get('/api/manuscripts', async (req, res) => {
-    const results = await db.query.manuscripts.findMany({
-      with: {
-        author: {
-          columns: {
-            id: true,
-            email: true,
-            displayName: true,
+  app.get('/api/manuscripts', requireAuth, async (req, res) => {
+    try {
+      const results = await db.query.manuscripts.findMany({
+        with: {
+          author: {
+            columns: {
+              id: true,
+              email: true,
+              displayName: true,
+            },
           },
         },
-      },
-    });
-    res.json(results);
+      });
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching manuscripts:', error);
+      res.status(500).json({ message: 'Failed to fetch manuscripts' });
+    }
   });
 
-  app.get('/api/manuscripts/:id', async (req, res) => {
-    const result = await db.query.manuscripts.findFirst({
-      where: eq(manuscripts.id, parseInt(req.params.id)),
-      with: {
-        author: true,
-      },
-      columns: {
-        id: true,
-        title: true,
-        authorId: true,
-        imageSettings: true,
-        updatedAt: true,
-      },
-    });
-    if (!result) return res.status(404).send('Manuscript not found');
-    res.json(result);
+  app.get('/api/manuscripts/:id', requireAuth, async (req, res) => {
+    try {
+      console.log('Fetching manuscript:', req.params.id, 'for user:', req.user?.id);
+
+      const result = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.id)),
+        with: {
+          author: {
+            columns: {
+              id: true,
+              email: true,
+              displayName: true,
+            },
+          },
+        },
+      });
+
+      if (!result) {
+        console.log('Manuscript not found:', req.params.id);
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      console.log('Found manuscript:', result.id, 'authored by:', result.authorId);
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching manuscript:', error);
+      res.status(500).json({ message: 'Failed to fetch manuscript' });
+    }
+  });
+
+  app.get('/api/manuscripts/:id/chunks', requireAuth, async (req, res) => {
+    try {
+      const results = await db.query.chunks.findMany({
+        where: eq(chunks.manuscriptId, parseInt(req.params.id)),
+        orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
+        with: {
+          manuscript: {
+            columns: {
+              id: true,
+              title: true,
+              authorId: true,
+              imageSettings: true,
+            },
+          },
+        },
+      });
+
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching chunks:', error);
+      res.status(500).json({ message: 'Failed to fetch chunks' });
+    }
   });
 
   app.post('/api/manuscripts', requireAuth, async (req, res) => {
@@ -144,52 +152,6 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Chunks
-  app.get('/api/manuscripts/:id/chunks', async (req, res) => {
-    console.time('chunks-query');
-    try {
-      const results = await db.query.chunks.findMany({
-        where: eq(chunks.manuscriptId, parseInt(req.params.id)),
-        columns: {
-          id: true,
-          manuscriptId: true,
-          chunkOrder: true,
-          headingH1: true,
-          headingH2: true,
-          text: true,
-        },
-        with: {
-          images: {
-            columns: {
-              localPath: true,
-            },
-            limit: 1,
-          },
-          manuscript: {
-            columns: {
-              id: true,
-              title: true,
-              authorId: true,
-              imageSettings: true,
-            }
-          }
-        },
-        orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
-      });
-
-      const chunksWithImages = results.map(chunk => ({
-        ...chunk,
-        imageUrl: chunk.images?.[0]?.localPath
-      }));
-
-      console.timeEnd('chunks-query');
-      res.json(chunksWithImages);
-    } catch (error) {
-      console.error('Error fetching chunks:', error);
-      res.status(500).json({ message: 'Failed to fetch chunks' });
-    }
-  });
-
-  // Update chunk
   app.put('/api/manuscripts/:manuscriptId/chunks/:id', requireAuth, async (req, res) => {
     try {
       const { text, order } = req.body;
