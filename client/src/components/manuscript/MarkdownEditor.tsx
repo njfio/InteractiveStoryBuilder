@@ -4,11 +4,12 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
+import { EditorState } from '@codemirror/state';
 
 interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
-  onEditorMount?: (editor: any) => void;
+  onEditorMount?: (view: EditorView) => void;
   className?: string;
 }
 

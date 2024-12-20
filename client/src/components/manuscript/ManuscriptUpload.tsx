@@ -18,6 +18,8 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarkdownEditor } from './MarkdownEditor';
 import { ChunkPreview } from './ChunkPreview';
+import { EditorView } from '@codemirror/view';
+import { Text } from '@codemirror/state';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -27,7 +29,7 @@ const formSchema = z.object({
 export function ManuscriptUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [currentChunks, setCurrentChunks] = useState<any[]>([]);
-  const [editorRef, setEditorRef] = useState<any>(null);
+  const [editorView, setEditorView] = useState<EditorView | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -39,12 +41,27 @@ export function ManuscriptUpload() {
   });
 
   const handleChunkSelect = (chunkText: string) => {
-    if (editorRef) {
+    if (editorView) {
       const content = form.getValues('markdown');
       const position = content.indexOf(chunkText);
+
       if (position !== -1) {
-        editorRef.focus();
-        editorRef.setSelection({ line: 0, ch: position }, { line: 0, ch: position + chunkText.length });
+        // Convert position to line and column
+        const beforeText = content.substring(0, position);
+        const lines = beforeText.split('\n');
+        const line = lines.length - 1;
+        const col = lines[lines.length - 1].length;
+
+        // Create selection range
+        const from = editorView.state.doc.line(line + 1).from + col;
+        const to = from + chunkText.length;
+
+        // Update selection and scroll into view
+        editorView.dispatch({
+          selection: { anchor: from, head: to },
+          effects: EditorView.scrollIntoView(from)
+        });
+        editorView.focus();
       }
     }
   };
@@ -118,7 +135,7 @@ export function ManuscriptUpload() {
                         <MarkdownEditor
                           value={field.value}
                           onChange={field.onChange}
-                          onEditorMount={setEditorRef}
+                          onEditorMount={setEditorView}
                           className="min-h-[400px] border rounded-md"
                         />
 
