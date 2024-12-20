@@ -19,7 +19,6 @@ import { useToast } from '@/hooks/use-toast';
 import { MarkdownEditor } from './MarkdownEditor';
 import { ChunkPreview } from './ChunkPreview';
 import { EditorView } from '@codemirror/view';
-import { Text } from '@codemirror/state';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),

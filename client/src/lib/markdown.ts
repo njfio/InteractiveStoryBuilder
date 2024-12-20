@@ -36,7 +36,7 @@ export const parseMarkdown = async (
   const saveCurrentChunk = () => {
     if (currentChunkLines.length > 0) {
       const text = currentChunkLines.join('\n').trim();
-      if (text && (!settings.minLines || text.split('\n').length >= settings.minLines)) {
+      if (text && (!settings.minLines || text.split('\n').filter(line => line.trim()).length >= settings.minLines)) {
         chunks.push({
           headingH1: currentH1,
           text,
@@ -72,13 +72,10 @@ export const parseMarkdown = async (
 
     // Handle headers
     if (node.type === 'heading') {
-      // Save current chunk before starting a new one at header
       saveCurrentChunk();
-
       const headerText = nodeLines.join('\n');
 
       if (node.depth === 1) {
-        // For H1, update current H1 and create a chunk for the header itself
         currentH1 = headerText.replace(/^#\s+/, '').trim();
         chunks.push({
           headingH1: currentH1,
@@ -86,36 +83,21 @@ export const parseMarkdown = async (
           order: chunkOrder++
         });
       } else {
-        // For other headers, start a new chunk with the header
         currentChunkLines = [headerText];
       }
       currentChunkStart = end.line;
       return;
     }
 
-    // Handle block content (paragraphs, code blocks, blockquotes)
+    // Handle block content
     if (node.type === 'paragraph' || node.type === 'code' || node.type === 'blockquote') {
-      // Only save the current chunk if we're not in a nested context
+      // Only process root-level blocks
       if (!node.parent || node.parent.type === 'root') {
         saveCurrentChunk();
-      }
-
-      // If there's a gap between the last node and this one, preserve it
-      if (currentChunkStart < start.line - 1) {
-        const gap = lines.slice(currentChunkStart, start.line - 1);
-        if (gap.some(line => line.trim())) {
-          currentChunkLines.push(...gap);
-        }
-      }
-
-      currentChunkLines.push(...nodeLines);
-
-      // Only create new chunks for standalone blocks
-      if (!node.parent || node.parent.type === 'root') {
+        currentChunkLines = nodeLines;
         saveCurrentChunk();
+        currentChunkStart = end.line;
       }
-
-      currentChunkStart = end.line;
     }
   });
 
@@ -126,7 +108,7 @@ export const parseMarkdown = async (
   const remainingLines = lines.slice(currentChunkStart);
   if (remainingLines.some(line => line.trim())) {
     const text = remainingLines.join('\n').trim();
-    if (!settings.minLines || text.split('\n').length >= settings.minLines) {
+    if (!settings.minLines || text.split('\n').filter(line => line.trim()).length >= settings.minLines) {
       chunks.push({
         headingH1: currentH1,
         text,
