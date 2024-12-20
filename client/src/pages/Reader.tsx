@@ -46,6 +46,13 @@ export function Reader() {
   const [activeChunk, setActiveChunk] = useState<Chunk | null>(null);
   const manuscriptId = params?.id ? parseInt(params.id) : NaN;
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      setLocation('/login');
+    }
+  }, [loading, user, setLocation]);
+
   // Query manuscript data
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<Manuscript>({
     queryKey: [`/api/manuscripts/${manuscriptId}`],
@@ -58,14 +65,7 @@ export function Reader() {
     enabled: !isNaN(manuscriptId) && !!manuscript && !!user,
   });
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      setLocation('/login');
-    }
-  }, [loading, user, setLocation]);
-
-  // Sync active chunk with URL
+  // Handle chunk navigation
   useEffect(() => {
     if (!chunks.length) return;
 
@@ -78,8 +78,8 @@ export function Reader() {
       if (chunk && chunk !== activeChunk) {
         setActiveChunk(chunk);
       }
-    } else {
-      // Set first chunk as default
+    } else if (chunks[0] && !activeChunk) {
+      // Only set first chunk if no active chunk exists
       setLocation(`/reader/${manuscriptId}?chunk=${chunks[0].id}`, { replace: true });
       setActiveChunk(chunks[0]);
     }
@@ -94,20 +94,21 @@ export function Reader() {
     );
   }
 
-  // Handle unauthorized access
-  if (!user) {
-    return null;
-  }
-
-  // Handle missing manuscript or chunks
-  if (!manuscript || !chunks.length) {
-    setLocation('/');
-    return null;
+  // Handle missing manuscript or chunks after loading
+  if (!loading && (!manuscript || !chunks.length)) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-2">Manuscript Not Found</h2>
+          <p className="text-muted-foreground">This manuscript may have been deleted or you don't have access to it.</p>
+        </div>
+      </div>
+    );
   }
 
   // Use active chunk or default to first chunk
   const currentChunk = activeChunk || chunks[0];
-  const isAuthor = user?.id === manuscript.authorId;
+  const isAuthor = user?.id === manuscript?.authorId;
 
   const handleChunkChange = (chunkId: number) => {
     const newChunk = chunks.find(c => c.id === chunkId);
@@ -124,7 +125,7 @@ export function Reader() {
         <header className="mb-12 text-center">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-4xl font-bold">{manuscript.title}</h1>
-            <ExportDialog manuscriptId={manuscript.id} title={manuscript.title} />
+            {isAuthor && <ExportDialog manuscriptId={manuscript.id} title={manuscript.title} />}
           </div>
           <p className="text-muted-foreground">
             by {manuscript.author?.displayName || manuscript.author?.email || 'Anonymous'}
