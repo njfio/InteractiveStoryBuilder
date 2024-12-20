@@ -39,7 +39,7 @@ export const parseMarkdown = async (
     const text = content.join('\n').trim();
     if (!text) return;
 
-    // Only create chunks that are meaningful units
+    // Count non-empty lines
     const nonEmptyLines = content.filter(line => line.trim()).length;
     if (force || inPreview || inList || nonEmptyLines >= (settings.minLines || 2)) {
       chunks.push({
@@ -69,6 +69,16 @@ export const parseMarkdown = async (
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
+
+    // Handle separators (---)
+    if (/^-{3,}$/.test(trimmed)) {
+      if (currentChunk.length > 0) {
+        addChunk(currentChunk);
+        currentChunk = [];
+      }
+      addChunk([line], true);
+      continue;
+    }
 
     // Handle chapter headers (H1)
     if (trimmed.startsWith('# ')) {
