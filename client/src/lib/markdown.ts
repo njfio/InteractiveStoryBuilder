@@ -1,6 +1,11 @@
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkGfm from 'remark-gfm';
+/**
+ * Markdown parsing and chunking implementation
+ * Rules:
+ * 1. Headers are always their own chunks
+ * 2. Lists (including nested) stay together as one chunk
+ * 3. Paragraphs separated by blank lines form chunks
+ * 4. Code blocks (including fences) are their own chunks
+ */
 
 interface ChunkData {
   headingH1?: string;
@@ -11,42 +16,35 @@ interface ChunkData {
 interface ChunkSettings {
   preserveLists?: boolean;
   minLines?: number;
-  paragraphsPerChunk?: number;
 }
 
 export const parseMarkdown = async (
   markdown: string,
-  settings: ChunkSettings = { preserveLists: true, minLines: 2, paragraphsPerChunk: 1 }
+  settings: ChunkSettings = { preserveLists: true, minLines: 2 }
 ): Promise<ChunkData[]> => {
   const chunks: ChunkData[] = [];
   let currentH1: string | undefined;
   let chunkOrder = 0;
 
-  // Split content into lines
+  // Split content into lines for processing
   const lines = markdown.split('\n');
-  let currentContent: string[] = [];
-  let inList = false;
+  let currentLines: string[] = [];
   let inCodeBlock = false;
+  let inList = false;
+  let listIndentLevel = 0;
 
-  const isListStart = (line: string) => {
-    const trimmed = line.trim();
-    return /^[-*+]|\d+\./.test(trimmed);
-  };
-
-  const isListContinuation = (line: string) => {
-    if (!line.trim()) return true; // Empty lines within list context
-    return line.startsWith(' ') || isListStart(line); // Indented content or new list items
-  };
-
-  const addChunk = (content: string[]) => {
+  const createChunk = (content: string[], force = false) => {
     const text = content.join('\n').trim();
     if (!text) return;
 
-    // Count non-empty lines
+    // Non-empty lines determine if chunk meets minimum size
     const nonEmptyLines = content.filter(line => line.trim()).length;
-    const minLines = settings.minLines || 2;
 
-    if (nonEmptyLines >= minLines || inList) {
+    // Create chunk if:
+    // 1. Force is true (headers)
+    // 2. Content is a list
+    // 3. Meets minimum line requirement
+    if (force || inList || nonEmptyLines >= (settings.minLines || 2)) {
       chunks.push({
         headingH1: currentH1,
         text,
@@ -55,109 +53,118 @@ export const parseMarkdown = async (
     }
   };
 
-  const processCurrentContent = () => {
-    if (currentContent.length > 0) {
-      addChunk(currentContent);
-      currentContent = [];
-    }
+  const isListLine = (line: string) => {
+    const trimmed = line.trim();
+    return /^[-*+]|\d+\./.test(trimmed);
+  };
+
+  const getIndentLevel = (line: string) => {
+    return line.match(/^\s*/)?.[0].length ?? 0;
+  };
+
+  const isListContinuation = (line: string, currentIndent: number) => {
+    if (!line.trim()) return true; // Empty lines in list context
+    const indent = getIndentLevel(line);
+    return indent > currentIndent || isListLine(line);
   };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmedLine = line.trim();
+    const nextLine = lines[i + 1];
+
+    // Handle headers
+    if (trimmedLine.startsWith('#')) {
+      if (currentLines.length > 0) {
+        createChunk(currentLines, inList);
+        currentLines = [];
+      }
+
+      // Update current H1 if this is one
+      if (trimmedLine.startsWith('# ')) {
+        currentH1 = trimmedLine.substring(2);
+      }
+
+      createChunk([line], true);
+      inList = false;
+      continue;
+    }
 
     // Handle code blocks
     if (trimmedLine.startsWith('```')) {
       if (!inCodeBlock) {
-        processCurrentContent();
+        if (currentLines.length > 0) {
+          createChunk(currentLines, inList);
+          currentLines = [];
+        }
         inCodeBlock = true;
       } else {
         inCodeBlock = false;
-        if (currentContent.length > 0) {
-          addChunk(currentContent);
-          currentContent = [];
-        }
+        createChunk(currentLines.concat(line), true);
+        currentLines = [];
+        continue;
       }
-      currentContent.push(line);
-      continue;
     }
 
     if (inCodeBlock) {
-      currentContent.push(line);
-      continue;
-    }
-
-    // Handle headers
-    if (trimmedLine.startsWith('#')) {
-      processCurrentContent();
-
-      if (trimmedLine.startsWith('# ')) {
-        currentH1 = trimmedLine.replace(/^#\s+/, '');
-        addChunk([line]);
-      } else {
-        addChunk([line]);
-      }
+      currentLines.push(line);
       continue;
     }
 
     // Handle lists
     if (settings.preserveLists) {
-      if (isListStart(line) && !inList) {
-        // Start new list after completing current content
-        processCurrentContent();
+      if (isListLine(line) && !inList) {
+        // Start of new list
+        if (currentLines.length > 0) {
+          createChunk(currentLines);
+          currentLines = [];
+        }
         inList = true;
-        currentContent = [line];
+        listIndentLevel = getIndentLevel(line);
+        currentLines.push(line);
       } else if (inList) {
-        if (isListContinuation(line)) {
-          currentContent.push(line);
+        // Continue list if indented or another list item
+        if (isListContinuation(line, listIndentLevel)) {
+          currentLines.push(line);
         } else {
-          // End of list
-          processCurrentContent();
+          // List ended, create chunk and start new content
+          createChunk(currentLines, true);
+          currentLines = [line];
           inList = false;
-          currentContent = [line];
         }
       } else {
         // Regular paragraph content
-        if (!trimmedLine && currentContent.length > 0) {
-          // Empty line after content - check if we need to create a new chunk
-          currentContent.push(line);
-          const nextLine = lines[i + 1]?.trim();
-          if (nextLine && !nextLine.startsWith('#') && !isListStart(nextLine)) {
-            // There's more paragraph content coming, continue
-            continue;
+        if (!trimmedLine && currentLines.length > 0) {
+          // Empty line after content
+          const nextNonEmptyLine = lines.slice(i + 1).find(l => l.trim());
+          // Only create chunk if next non-empty line starts new content
+          if (!nextNonEmptyLine || 
+              nextNonEmptyLine.startsWith('#') || 
+              isListLine(nextNonEmptyLine)) {
+            createChunk(currentLines);
+            currentLines = [];
+          } else {
+            currentLines.push(line);
           }
-          processCurrentContent();
         } else if (trimmedLine) {
-          currentContent.push(line);
+          currentLines.push(line);
         }
       }
     } else {
-      // When not preserving lists, treat everything as regular content
-      if (!trimmedLine && currentContent.length > 0) {
-        currentContent.push(line);
-        processCurrentContent();
+      // When not preserving lists, handle all content as paragraphs
+      if (!trimmedLine && currentLines.length > 0) {
+        createChunk(currentLines);
+        currentLines = [];
       } else if (trimmedLine) {
-        currentContent.push(line);
+        currentLines.push(line);
       }
     }
   }
 
   // Handle any remaining content
-  if (currentContent.length > 0) {
-    addChunk(currentContent);
+  if (currentLines.length > 0) {
+    createChunk(currentLines, inList);
   }
 
   return chunks;
-};
-
-export const validateMarkdown = (markdown: string): boolean => {
-  try {
-    unified()
-      .use(remarkParse)
-      .use(remarkGfm)
-      .parse(markdown);
-    return true;
-  } catch {
-    return false;
-  }
 };
