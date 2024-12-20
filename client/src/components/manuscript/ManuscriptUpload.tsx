@@ -18,7 +18,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarkdownEditor } from './MarkdownEditor';
 import { ChunkPreview } from './ChunkPreview';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -74,7 +74,7 @@ export function ManuscriptUpload() {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Upload Manuscript</CardTitle>
       </CardHeader>
@@ -94,44 +94,43 @@ export function ManuscriptUpload() {
                 </FormItem>
               )}
             />
-            <Tabs defaultValue="editor">
-              <TabsList>
-                <TabsTrigger value="editor">Editor</TabsTrigger>
-                <TabsTrigger value="preview">
-                  Chunks Preview
-                  {currentChunks.length > 0 && (
-                    <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs">
-                      {currentChunks.length}
-                    </span>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="editor" className="mt-4">
-                <FormField
-                  control={form.control}
-                  name="markdown"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Content (Markdown)</FormLabel>
-                      <FormControl>
+
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="markdown"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Content (Markdown)</FormLabel>
+                    <FormControl>
+                      <div className="space-y-4">
                         <MarkdownEditor
                           value={field.value}
                           onChange={field.onChange}
                           className="min-h-[400px] border rounded-md"
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </TabsContent>
-              <TabsContent value="preview" className="mt-4">
-                <ChunkPreview 
-                  markdown={form.watch('markdown')}
-                  onChange={setCurrentChunks} 
-                />
-              </TabsContent>
-            </Tabs>
+
+                        {field.value && (
+                          <Card className="mt-4">
+                            <CardHeader>
+                              <CardTitle className="text-lg">Content Chunks Preview</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <ChunkPreview 
+                                markdown={field.value}
+                                onChange={setCurrentChunks} 
+                              />
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <Button type="submit" disabled={isUploading}>
               {isUploading ? (
                 <>
