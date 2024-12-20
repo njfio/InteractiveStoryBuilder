@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,7 +23,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
-import { ChunkEditor } from './ChunkEditor';
 
 interface ManuscriptChunkEditorProps {
   manuscriptId: number;
@@ -41,9 +41,13 @@ export function ManuscriptChunkEditor({ manuscriptId }: ManuscriptChunkEditorPro
   // Update chunk mutation
   const updateChunk = useMutation({
     mutationFn: async ({ id, text, order }: any) => {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/manuscripts/${manuscriptId}/chunks/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({ text, order }),
       });
       if (!response.ok) throw new Error('Failed to update chunk');
@@ -61,9 +65,13 @@ export function ManuscriptChunkEditor({ manuscriptId }: ManuscriptChunkEditorPro
   // Merge chunks mutation
   const mergeChunks = useMutation({
     mutationFn: async ({ chunk1Id, chunk2Id }: any) => {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/manuscripts/${manuscriptId}/chunks/merge`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({ chunk1Id, chunk2Id }),
       });
       if (!response.ok) throw new Error('Failed to merge chunks');
@@ -78,9 +86,13 @@ export function ManuscriptChunkEditor({ manuscriptId }: ManuscriptChunkEditorPro
   // Split chunk mutation
   const splitChunk = useMutation({
     mutationFn: async ({ id, splitPoint }: any) => {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/manuscripts/${manuscriptId}/chunks/${id}/split`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({ splitPoint }),
       });
       if (!response.ok) throw new Error('Failed to split chunk');
@@ -104,7 +116,9 @@ export function ManuscriptChunkEditor({ manuscriptId }: ManuscriptChunkEditorPro
     ];
 
     await Promise.all(
-      updates.map(({ id, order }) => updateChunk.mutateAsync({ id, order }))
+      updates.map(({ id, order }) =>
+        updateChunk.mutateAsync({ id, order })
+      )
     );
   };
 
@@ -156,29 +170,16 @@ export function ManuscriptChunkEditor({ manuscriptId }: ManuscriptChunkEditorPro
                 </div>
 
                 <div className="flex-1">
-                  <ChunkEditor
-                    chunk={chunk}
-                    chunks={chunks}
-                    onUpdateChunk={(updatedChunk) =>
+                  <Textarea
+                    value={chunk.text}
+                    onChange={(e) =>
                       updateChunk.mutate({
                         id: chunk.id,
-                        text: updatedChunk.text,
-                        order: updatedChunk.order,
+                        text: e.target.value,
+                        order: chunk.order,
                       })
                     }
-                    onMergeChunks={(chunk1, chunk2) =>
-                      mergeChunks.mutate({
-                        chunk1Id: chunk1.id,
-                        chunk2Id: chunk2.id,
-                      })
-                    }
-                    onSplitChunk={(chunk, splitPoint) =>
-                      splitChunk.mutate({
-                        id: chunk.id,
-                        splitPoint,
-                      })
-                    }
-                    onReorderChunk={handleMoveChunk}
+                    className="min-h-[100px] font-mono"
                   />
                 </div>
 
@@ -189,13 +190,6 @@ export function ManuscriptChunkEditor({ manuscriptId }: ManuscriptChunkEditorPro
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => setSelectedChunk(chunk.id)}
-                      className="flex items-center"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Insert After
-                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
                         mergeChunks.mutate({
@@ -209,9 +203,18 @@ export function ManuscriptChunkEditor({ manuscriptId }: ManuscriptChunkEditorPro
                       <Merge className="mr-2 h-4 w-4" />
                       Merge with Next
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center text-destructive">
-                      <Trash className="mr-2 h-4 w-4" />
-                      Delete
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const splitPoint = chunk.text.length / 2;
+                        splitChunk.mutate({
+                          id: chunk.id,
+                          splitPoint,
+                        });
+                      }}
+                      className="flex items-center"
+                    >
+                      <Scissors className="mr-2 h-4 w-4" />
+                      Split in Half
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

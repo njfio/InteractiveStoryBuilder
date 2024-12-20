@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
-  BookOpen
+  BookOpen,
+  Edit2
 } from 'lucide-react';
 import {
   Tooltip,
@@ -36,6 +37,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ManuscriptChunkEditor } from './ManuscriptChunkEditor';
 
 interface ImageSettings {
   seed: number;
@@ -73,6 +75,7 @@ interface ChunkViewProps {
 export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkViewProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [chapterSelectOpen, setChapterSelectOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const queryClient = useQueryClient();
@@ -200,267 +203,281 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
   };
 
   return (
-    <Card className="max-w-4xl mx-auto mb-24">
-      <CardHeader>
-        {chunk.headingH1 && (
-          <CardTitle className="text-3xl font-bold">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
-              components={{
-                p: ({node, ...props}) => <p className="m-0" {...props} />
-              }}
-            >
-              {chunk.headingH1}
-            </ReactMarkdown>
-          </CardTitle>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="prose prose-lg max-w-none dark:prose-invert">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
-            components={{
-              p: ({children, ...props}) => (
-                <p className="my-4 leading-relaxed" {...props}>
-                  {children}
-                </p>
-              ),
-              ul: ({children, ...props}) => (
-                <ul className="list-disc pl-6 my-4 space-y-2" {...props}>
-                  {children}
-                </ul>
-              ),
-              ol: ({children, ...props}) => (
-                <ol className="list-decimal pl-6 my-4 space-y-2" {...props}>
-                  {children}
-                </ol>
-              )
-            }}
-          >
-            {chunk.text}
-          </ReactMarkdown>
-        </div>
-
-        {chunk.imageUrl && (
-          <div className="relative w-full aspect-[9/16] rounded-lg overflow-hidden bg-muted">
-            <img
-              src={window.location.origin + chunk.imageUrl}
-              alt="Generated illustration"
-              className="object-contain w-full h-full"
-            />
+    <>
+      {isEditing ? (
+        <div className="max-w-4xl mx-auto mb-24">
+          <div className="mb-4 flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Edit Manuscript</h2>
+            <Button variant="outline" onClick={() => setIsEditing(false)}>
+              Exit Editor
+            </Button>
           </div>
-        )}
-
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg py-4 px-6 z-50">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="w-1/3 flex items-center gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setChapterSelectOpen(true)}
-                    >
-                      <BookOpen className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Chapter Select</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/dashboard">
-                      <Button variant="ghost" size="icon">
-                        <Home className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Back to Dashboard</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={playTTS}
-                      disabled={isPlaying}
-                    >
-                      <Play className={isPlaying ? 'text-primary' : ''} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Play Text-to-Speech</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={handleShareChunk}>
-                      <Share2 />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Share this section</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <ManuscriptChunkEditor chunk={chunk} manuscriptId={chunk.manuscriptId} />
+        </div>
+      ) : (
+        <Card className="max-w-4xl mx-auto mb-24">
+          <CardHeader>
+            {chunk.headingH1 && (
+              <CardTitle className="text-3xl font-bold">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
+                  components={{
+                    p: ({node, ...props}) => <p className="m-0" {...props} />
+                  }}
+                >
+                  {chunk.headingH1}
+                </ReactMarkdown>
+              </CardTitle>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="prose prose-lg max-w-none dark:prose-invert">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
+                components={{
+                  p: ({children, ...props}) => (
+                    <p className="my-4 leading-relaxed" {...props}>
+                      {children}
+                    </p>
+                  ),
+                  ul: ({children, ...props}) => (
+                    <ul className="list-disc pl-6 my-4 space-y-2" {...props}>
+                      {children}
+                    </ul>
+                  ),
+                  ol: ({children, ...props}) => (
+                    <ol className="list-decimal pl-6 my-4 space-y-2" {...props}>
+                      {children}
+                    </ol>
+                  )
+                }}
+              >
+                {chunk.text}
+              </ReactMarkdown>
             </div>
 
-            <div className="w-1/3 flex items-center justify-center gap-4">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handlePreviousPage}
-                      disabled={currentChunkIndex === 0}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Previous Page</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            {chunk.imageUrl && (
+              <div className="relative w-full aspect-[9/16] rounded-lg overflow-hidden bg-muted">
+                <img
+                  src={window.location.origin + chunk.imageUrl}
+                  alt="Generated illustration"
+                  className="object-contain w-full h-full"
+                />
+              </div>
+            )}
 
-              <span className="text-sm text-muted-foreground">
-                Page {currentChunkIndex + 1} of {allChunks.length}
-              </span>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handleNextPage}
-                      disabled={currentChunkIndex === allChunks.length - 1}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Next Page</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            <div className="w-1/3 flex items-center justify-end gap-2">
-              {isAuthor && (
-                <TooltipProvider>
-                  <Dialog>
+            <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg py-4 px-6 z-50">
+              <div className="max-w-7xl mx-auto flex items-center justify-between">
+                <div className="w-1/3 flex items-center gap-2">
+                  <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Settings2 className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setChapterSelectOpen(true)}
+                        >
+                          <BookOpen className="h-4 w-4" />
+                        </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Image Generation Settings</p>
+                        <p>Chapter Select</p>
                       </TooltipContent>
                     </Tooltip>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Image Generation</DialogTitle>
-                        <DialogDescription>
-                          Customize and generate images for this section of your manuscript
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-6">
-                        <ImageGenerator
-                          key={`generator-${chunk.manuscriptId}-${chunk.manuscript.imageSettings.seed ?? 469}`}
-                          chunkId={chunk.id}
-                          manuscriptId={chunk.manuscriptId}
-                        />
-                        <ManuscriptImageSettings
-                          manuscriptId={chunk.manuscriptId}
-                          currentSettings={{
-                            seed: chunk.manuscript?.imageSettings?.seed ?? 469,
-                            prompt: chunk.manuscript?.imageSettings?.prompt ?? "",
-                            aspect_ratio: chunk.manuscript?.imageSettings?.aspect_ratio ?? "9:16",
-                            image_reference_url: chunk.manuscript?.imageSettings?.image_reference_url ?? "",
-                            style_reference_url: chunk.manuscript?.imageSettings?.style_reference_url ?? "",
-                            image_reference_weight: chunk.manuscript?.imageSettings?.image_reference_weight ?? 0.85,
-                            style_reference_weight: chunk.manuscript?.imageSettings?.style_reference_weight ?? 0.85
-                          }}
-                        />
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </TooltipProvider>
-              )}
 
-              {isAuthor && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          generateImage.mutate({
-                            chunkId: chunk.id,
-                            prompt: chunk.text
-                          });
-                        }}
-                        disabled={generateImage.isPending}
-                        size="sm"
-                      >
-                        {generateImage.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          'Generate Image'
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Generate New Image</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link href="/dashboard">
+                          <Button variant="ghost" size="icon">
+                            <Home className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Back to Dashboard</p>
+                      </TooltipContent>
+                    </Tooltip>
 
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
-                      <Button variant="ghost" size="icon">
-                        <Images className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>View Image Gallery</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={playTTS}
+                          disabled={isPlaying}
+                        >
+                          <Play className={isPlaying ? 'text-primary' : ''} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Play Text-to-Speech</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={handleShareChunk}>
+                          <Share2 />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Share this section</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                <div className="w-1/3 flex items-center justify-center gap-4">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handlePreviousPage}
+                          disabled={currentChunkIndex === 0}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Previous Page</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentChunkIndex + 1} of {allChunks.length}
+                  </span>
+
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handleNextPage}
+                          disabled={currentChunkIndex === allChunks.length - 1}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Next Page</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                <div className="w-1/3 flex items-center justify-end gap-2">
+                  {isAuthor && (
+                    <TooltipProvider>
+                      <Dialog>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Settings2 className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Image Generation Settings</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Image Generation</DialogTitle>
+                            <DialogDescription>
+                              Customize and generate images for this section of your manuscript
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-6">
+                            <ImageGenerator
+                              key={`generator-${chunk.manuscriptId}-${chunk.manuscript.imageSettings.seed ?? 469}`}
+                              chunkId={chunk.id}
+                              manuscriptId={chunk.manuscriptId}
+                            />
+                            <ManuscriptImageSettings
+                              manuscriptId={chunk.manuscriptId}
+                              currentSettings={{
+                                seed: chunk.manuscript?.imageSettings?.seed ?? 469,
+                                prompt: chunk.manuscript?.imageSettings?.prompt ?? "",
+                                aspect_ratio: chunk.manuscript?.imageSettings?.aspect_ratio ?? "9:16",
+                                image_reference_url: chunk.manuscript?.imageSettings?.image_reference_url ?? "",
+                                style_reference_url: chunk.manuscript?.imageSettings?.style_reference_url ?? "",
+                                image_reference_weight: chunk.manuscript?.imageSettings?.image_reference_weight ?? 0.85,
+                                style_reference_weight: chunk.manuscript?.imageSettings?.style_reference_weight ?? 0.85
+                              }}
+                            />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </TooltipProvider>
+                  )}
+
+                  {isAuthor && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              generateImage.mutate({
+                                chunkId: chunk.id,
+                                prompt: chunk.text
+                              });
+                            }}
+                            disabled={generateImage.isPending}
+                            size="sm"
+                          >
+                            {generateImage.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating...
+                              </>
+                            ) : (
+                              'Generate Image'
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Generate New Image</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link href={`/manuscripts/${chunk.manuscriptId}/gallery`}>
+                          <Button variant="ghost" size="icon">
+                            <Images className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>View Image Gallery</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <ChapterSelect
-          chunks={allChunks}
-          currentChunkId={chunk.id}
-          onChunkSelect={onChunkChange}
-          open={chapterSelectOpen}
-          onOpenChange={setChapterSelectOpen}
-        />
-      </CardContent>
-    </Card>
+            <ChapterSelect
+              chunks={allChunks}
+              currentChunkId={chunk.id}
+              onChunkSelect={onChunkChange}
+              open={chapterSelectOpen}
+              onOpenChange={setChapterSelectOpen}
+            />
+          </CardContent>
+        </Card>
+      )}
+    </>
   );
 }

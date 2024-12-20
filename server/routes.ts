@@ -183,6 +183,176 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update chunk
+  app.put('/api/manuscripts/:manuscriptId/chunks/:id', requireAuth, async (req, res) => {
+    try {
+      const { text, order } = req.body;
+      const user = req.user;
+
+      if (!user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Verify manuscript ownership
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.manuscriptId)),
+      });
+
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      if (manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      // Update the chunk
+      const [updatedChunk] = await db
+        .update(chunks)
+        .set({ 
+          text,
+          chunkOrder: order,
+          updatedAt: new Date()
+        })
+        .where(eq(chunks.id, parseInt(req.params.id)))
+        .returning();
+
+      res.json(updatedChunk);
+    } catch (error) {
+      console.error('Error updating chunk:', error);
+      res.status(500).json({ message: 'Failed to update chunk' });
+    }
+  });
+
+  // Merge chunks
+  app.post('/api/manuscripts/:manuscriptId/chunks/merge', requireAuth, async (req, res) => {
+    try {
+      const { chunk1Id, chunk2Id } = req.body;
+      const user = req.user;
+
+      if (!user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Verify manuscript ownership
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.manuscriptId)),
+      });
+
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      if (manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      // Get both chunks
+      const [chunk1, chunk2] = await Promise.all([
+        db.query.chunks.findFirst({ where: eq(chunks.id, chunk1Id) }),
+        db.query.chunks.findFirst({ where: eq(chunks.id, chunk2Id) })
+      ]);
+
+      if (!chunk1 || !chunk2) {
+        return res.status(404).json({ message: 'One or both chunks not found' });
+      }
+
+      // Merge chunks
+      const mergedText = `${chunk1.text}\n\n${chunk2.text}`;
+      const [updatedChunk] = await db
+        .update(chunks)
+        .set({ 
+          text: mergedText,
+          updatedAt: new Date()
+        })
+        .where(eq(chunks.id, chunk1Id))
+        .returning();
+
+      // Delete the second chunk
+      await db.delete(chunks).where(eq(chunks.id, chunk2Id));
+
+      // Reorder remaining chunks
+      await db
+        .update(chunks)
+        .set({ 
+          chunkOrder: sql`${chunks.chunkOrder} - 1` 
+        })
+        .where(sql`${chunks.chunkOrder} > ${chunk2.chunkOrder}`);
+
+      res.json(updatedChunk);
+    } catch (error) {
+      console.error('Error merging chunks:', error);
+      res.status(500).json({ message: 'Failed to merge chunks' });
+    }
+  });
+
+  // Split chunk
+  app.post('/api/manuscripts/:manuscriptId/chunks/:id/split', requireAuth, async (req, res) => {
+    try {
+      const { splitPoint } = req.body;
+      const user = req.user;
+
+      if (!user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Verify manuscript ownership
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.manuscriptId)),
+      });
+
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      if (manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      // Get the chunk to split
+      const chunk = await db.query.chunks.findFirst({
+        where: eq(chunks.id, parseInt(req.params.id)),
+      });
+
+      if (!chunk) {
+        return res.status(404).json({ message: 'Chunk not found' });
+      }
+
+      // Increment order of all chunks after this one
+      await db
+        .update(chunks)
+        .set({ 
+          chunkOrder: sql`${chunks.chunkOrder} + 1` 
+        })
+        .where(sql`${chunks.chunkOrder} > ${chunk.chunkOrder}`);
+
+      // Update original chunk with first part
+      const [updatedChunk1] = await db
+        .update(chunks)
+        .set({ 
+          text: chunk.text.slice(0, splitPoint),
+          updatedAt: new Date()
+        })
+        .where(eq(chunks.id, chunk.id))
+        .returning();
+
+      // Create new chunk with second part
+      const [newChunk] = await db
+        .insert(chunks)
+        .values({
+          manuscriptId: chunk.manuscriptId,
+          text: chunk.text.slice(splitPoint),
+          chunkOrder: chunk.chunkOrder + 1,
+        })
+        .returning();
+
+      res.json({ chunk1: updatedChunk1, chunk2: newChunk });
+    } catch (error) {
+      console.error('Error splitting chunk:', error);
+      res.status(500).json({ message: 'Failed to split chunk' });
+    }
+  });
+
   // Manuscript Settings
   app.put('/api/manuscripts/:id/settings', requireAuth, async (req, res) => {
     const { imageSettings } = req.body;
