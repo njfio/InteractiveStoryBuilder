@@ -641,6 +641,14 @@ async function generateImage(prompt: string, settings: any, characterReferenceUr
     throw new Error('REPLICATE_API_TOKEN not configured');
   }
 
+  // Clean prompt - remove markdown syntax and extra whitespace
+  const cleanPrompt = prompt
+    .replace(/^#+\s*/gm, '') // Remove markdown headings
+    .replace(/\n+/g, ' ') // Replace newlines with spaces
+    .trim();
+
+  console.log('Cleaned prompt for image generation:', cleanPrompt);
+
   // Call Replicate API for image generation
   const response = await fetch('https://api.replicate.com/v1/models/luma/photon/predictions', {
     method: 'POST',
@@ -651,7 +659,7 @@ async function generateImage(prompt: string, settings: any, characterReferenceUr
     },
     body: JSON.stringify({
       input: {
-        prompt,
+        prompt: cleanPrompt,
         seed: settings?.seed || Math.floor(Math.random() * 1000000),
         aspect_ratio: settings?.aspect_ratio || "4:3",
         image_reference_url: settings?.image_reference_url || null,
@@ -664,6 +672,8 @@ async function generateImage(prompt: string, settings: any, characterReferenceUr
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Replicate API error response:', errorText);
     throw new Error(`Replicate API error: ${response.statusText}`);
   }
 
