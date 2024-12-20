@@ -82,7 +82,14 @@ export function ManuscriptUpload() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          chunks: currentChunks.map(chunk => ({
+            text: chunk.text,
+            order: chunk.order,
+            headingH1: chunk.headingH1
+          }))
+        }),
       });
 
       if (!response.ok) {
