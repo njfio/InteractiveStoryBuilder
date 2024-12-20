@@ -1,0 +1,147 @@
+_app-d191f2e29467e244.js:16 
+        
+        
+       POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ _app-d191f2e29467e244.js:16
+(anonymous) @ _app-d191f2e29467e244.js:16
+(anonymous) @ _app-d191f2e29467e244.js:1
+o @ _app-d191f2e29467e244.js:1
+promise @ _app-d191f2e29467e244.js:4
+(anonymous) @ _app-d191f2e29467e244.js:4
+n.httpRequest @ _app-d191f2e29467e244.js:4
+t @ _app-d191f2e29467e244.js:4
+(anonymous) @ _app-d191f2e29467e244.js:4
+Promise.catch (async)
+t @ _app-d191f2e29467e244.js:4
+a.sendChunk @ _app-d191f2e29467e244.js:4
+a.sendEvents @ _app-d191f2e29467e244.js:4
+a.flush @ _app-d191f2e29467e244.js:4
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+setTimeout (async)
+(anonymous) @ _app-d191f2e29467e244.js:16
+e @ _app-d191f2e29467e244.js:4
+r @ _app-d191f2e29467e244.js:16
+Console.js:61 [vite] connecting...
+Console.js:61 [vite] connected.
+App.tsx:9 Uncaught SyntaxError: The requested module '/src/lib/auth.ts' does not provide an export named 'initAuth' (at App.tsx:9:10)

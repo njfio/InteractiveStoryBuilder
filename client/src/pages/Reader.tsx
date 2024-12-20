@@ -42,41 +42,28 @@ interface Manuscript {
 export function Reader() {
   const [, params] = useRoute('/reader/:id');
   const [, setLocation] = useLocation();
-  const { user, loading, initialized, initialize } = useAuthStore();
+  const { user, loading } = useAuthStore();
   const [activeChunk, setActiveChunk] = useState<Chunk | null>(null);
   const manuscriptId = params?.id ? parseInt(params.id) : NaN;
-
-  // Initialize auth state
-  useEffect(() => {
-    const init = async () => {
-      const cleanup = await initialize();
-      return cleanup;
-    };
-
-    const cleanup = init();
-    return () => {
-      cleanup.then(fn => fn?.());
-    };
-  }, [initialize]);
 
   // Query manuscript data
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<Manuscript>({
     queryKey: [`/api/manuscripts/${manuscriptId}`],
-    enabled: !isNaN(manuscriptId) && initialized && !loading && !!user,
+    enabled: !isNaN(manuscriptId) && !!user,
   });
 
   // Query chunks data
   const { data: chunks = [], isLoading: isLoadingChunks } = useQuery<Chunk[]>({
     queryKey: [`/api/manuscripts/${manuscriptId}/chunks`],
-    enabled: !isNaN(manuscriptId) && !!manuscript && initialized && !loading && !!user,
+    enabled: !isNaN(manuscriptId) && !!manuscript && !!user,
   });
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (initialized && !loading && !user) {
+    if (!loading && !user) {
       setLocation('/login');
     }
-  }, [initialized, loading, user, setLocation]);
+  }, [loading, user, setLocation]);
 
   // Sync active chunk with URL
   useEffect(() => {
@@ -99,7 +86,7 @@ export function Reader() {
   }, [chunks, manuscriptId, setLocation, activeChunk]);
 
   // Show loading state
-  if (!initialized || loading || isLoadingManuscript || isLoadingChunks) {
+  if (loading || isLoadingManuscript || isLoadingChunks) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

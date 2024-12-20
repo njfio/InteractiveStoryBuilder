@@ -10,65 +10,16 @@ type User = {
 interface AuthState {
   user: User | null;
   loading: boolean;
-  initialized: boolean;
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
-  initialize: () => Promise<(() => void) | undefined>;
   checkSession: () => Promise<boolean>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
-  initialized: false,
   setUser: (user) => set({ user }),
   setLoading: (loading) => set({ loading }),
-  initialize: async () => {
-    if (get().initialized) {
-      return undefined;
-    }
-
-    try {
-      set({ loading: true });
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        set({
-          user: {
-            id: session.user.id,
-            email: session.user.email,
-          },
-          loading: false,
-          initialized: true,
-        });
-      } else {
-        set({ user: null, loading: false, initialized: true });
-      }
-
-      // Subscribe to auth state changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          set({
-            user: {
-              id: session.user.id,
-              email: session.user.email,
-            },
-            loading: false,
-          });
-        } else {
-          set({ user: null, loading: false });
-        }
-      });
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    } catch (error) {
-      console.error('Error initializing auth:', error);
-      set({ user: null, loading: false, initialized: true });
-      return undefined;
-    }
-  },
   checkSession: async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -78,18 +29,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             id: session.user.id,
             email: session.user.email,
           },
+          loading: false
         });
         return true;
       }
-      set({ user: null });
+      set({ user: null, loading: false });
       return false;
     } catch (error) {
       console.error('Error checking session:', error);
-      set({ user: null });
+      set({ user: null, loading: false });
       return false;
     }
-  },
+  }
 }));
+
+// Set up auth state change subscription
+supabase.auth.onAuthStateChange((_event, session) => {
+  if (session?.user) {
+    useAuthStore.setState({
+      user: {
+        id: session.user.id,
+        email: session.user.email
+      },
+      loading: false
+    });
+  } else {
+    useAuthStore.setState({ user: null, loading: false });
+  }
+});
 
 export const signIn = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -118,7 +85,7 @@ export const signOut = async () => {
 };
 
 export const requireAuth = () => {
-  const { user, loading, initialized } = useAuthStore.getState();
-  if (!initialized || loading) return true;
+  const { user, loading } = useAuthStore.getState();
+  if (loading) return true;
   return !!user;
 };
