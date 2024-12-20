@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -17,6 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { MarkdownEditor } from './MarkdownEditor';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -97,10 +97,10 @@ export function ManuscriptUpload() {
                 <FormItem>
                   <FormLabel>Content (Markdown)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="# Chapter 1&#10;&#10;Once upon a time..."
-                      className="min-h-[300px] font-mono"
-                      {...field}
+                    <MarkdownEditor
+                      value={field.value}
+                      onChange={field.onChange}
+                      className="min-h-[400px] border rounded-md"
                     />
                   </FormControl>
                   <FormMessage />
