@@ -47,7 +47,9 @@ export function ChunkPreview({ markdown, onChange, onChunkSelect }: ChunkPreview
     parseContent();
   }, [markdown, onChange]);
 
-  const toggleAllChunks = () => {
+  const toggleAllChunks = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent form submission
+    e.stopPropagation(); // Stop event bubbling
     if (expandedItems.length === chunks.length) {
       setExpandedItems([]);
     } else {
@@ -88,6 +90,7 @@ export function ChunkPreview({ markdown, onChange, onChunkSelect }: ChunkPreview
         <Button
           variant="ghost"
           size="sm"
+          type="button"
           className="h-8 px-2"
           onClick={toggleAllChunks}
         >
@@ -146,6 +149,7 @@ export function ChunkPreview({ markdown, onChange, onChunkSelect }: ChunkPreview
         <div className="mt-4 flex justify-end space-x-2">
           <Button
             variant="secondary"
+            type="button"
             onClick={() => {
               // TODO: Add settings dialog for chunk configuration
             }}
