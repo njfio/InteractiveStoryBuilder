@@ -5,7 +5,6 @@ import { manuscripts, users, chunks } from '@db/schema';
 import { eq } from 'drizzle-orm';
 import { requireAuth } from './middleware/auth';
 import { createClient } from '@supabase/supabase-js';
-import { sql } from 'drizzle-orm';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -42,7 +41,7 @@ export function registerRoutes(app: Express): Server {
 
       console.log(`Generating image for chunk ${chunkId} with prompt: ${prompt}`);
 
-      // Use manuscript's image settings for generation
+      // Generate image using manuscript settings
       const imageUrl = await generateImage(
         prompt || chunk.text,
         chunk.manuscript.imageSettings,
@@ -66,27 +65,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Manuscripts
-  app.get('/api/manuscripts', requireAuth, async (req, res) => {
-    try {
-      const results = await db.query.manuscripts.findMany({
-        with: {
-          author: {
-            columns: {
-              id: true,
-              email: true,
-              displayName: true,
-            },
-          },
-        },
-      });
-      res.json(results);
-    } catch (error) {
-      console.error('Error fetching manuscripts:', error);
-      res.status(500).json({ message: 'Failed to fetch manuscripts' });
-    }
-  });
-
+  // Manuscripts endpoint
   app.get('/api/manuscripts/:id', requireAuth, async (req, res) => {
     try {
       console.log('Fetching manuscript:', req.params.id, 'for user:', req.user?.id);
@@ -611,7 +590,66 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-// Helper functions
+// Helper function for image generation
+async function generateImage(prompt: string, settings: any, characterReferenceUrl: string | null): Promise<string> {
+  if (!process.env.REPLICATE_API_TOKEN) {
+    throw new Error('REPLICATE_API_TOKEN not configured');
+  }
+
+  // Clean prompt - remove markdown syntax and extra whitespace
+  const cleanPrompt = prompt
+    .replace(/^#+\s*/gm, '') // Remove markdown headings
+    .replace(/\n+/g, ' ') // Replace newlines with spaces
+    .trim();
+
+  console.log('Cleaned prompt for image generation:', cleanPrompt);
+
+  // Build input parameters, only including values that are provided
+  const input: any = {
+    prompt: cleanPrompt,
+    seed: settings?.seed || Math.floor(Math.random() * 1000000),
+    aspect_ratio: settings?.aspect_ratio || "4:3",
+  };
+
+  // Only add reference parameters if they're provided
+  if (settings?.image_reference_url) {
+    input.image_reference_url = settings.image_reference_url;
+    input.image_reference_weight = settings.image_reference_weight || 0.85;
+  }
+
+  if (settings?.style_reference_url) {
+    input.style_reference_url = settings.style_reference_url;
+    input.style_reference_weight = settings.style_reference_weight || 0.85;
+  }
+
+  if (characterReferenceUrl) {
+    input.character_reference_url = characterReferenceUrl;
+  }
+
+  // Call Replicate API for image generation
+  const response = await fetch('https://api.replicate.com/v1/models/luma/photon/predictions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'wait'
+    },
+    body: JSON.stringify({ input }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Replicate API error response:', errorText);
+    throw new Error(`Replicate API error: ${response.statusText}`);
+  }
+
+  const prediction = await response.json();
+  console.log('Image generation started:', prediction);
+
+  // Return the generated image URL
+  return prediction.output?.[0] || null;
+}
+
 async function parseMarkdown(markdown: string) {
   // Simple markdown parsing - replace with a robust parser for production
   const lines = markdown.split('\n');
@@ -634,54 +672,6 @@ async function parseMarkdown(markdown: string) {
   }
 
   return chunks;
-}
-
-async function generateImage(prompt: string, settings: any, characterReferenceUrl: string | null): Promise<string> {
-  if (!process.env.REPLICATE_API_TOKEN) {
-    throw new Error('REPLICATE_API_TOKEN not configured');
-  }
-
-  // Clean prompt - remove markdown syntax and extra whitespace
-  const cleanPrompt = prompt
-    .replace(/^#+\s*/gm, '') // Remove markdown headings
-    .replace(/\n+/g, ' ') // Replace newlines with spaces
-    .trim();
-
-  console.log('Cleaned prompt for image generation:', cleanPrompt);
-
-  // Call Replicate API for image generation
-  const response = await fetch('https://api.replicate.com/v1/models/luma/photon/predictions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'wait'
-    },
-    body: JSON.stringify({
-      input: {
-        prompt: cleanPrompt,
-        seed: settings?.seed || Math.floor(Math.random() * 1000000),
-        aspect_ratio: settings?.aspect_ratio || "4:3",
-        image_reference_url: settings?.image_reference_url || null,
-        style_reference_url: settings?.style_reference_url || null,
-        image_reference_weight: settings?.image_reference_weight || 0.85,
-        style_reference_weight: settings?.style_reference_weight || 0.85,
-        character_reference_url: characterReferenceUrl
-      }
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Replicate API error response:', errorText);
-    throw new Error(`Replicate API error: ${response.statusText}`);
-  }
-
-  const prediction = await response.json();
-  console.log('Image generation started:', prediction);
-
-  // Return the generated image URL
-  return prediction.output?.[0] || null;
 }
 
 function getPublicUrl(req: any): string {
