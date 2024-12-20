@@ -27,6 +27,7 @@ export const parseMarkdown = async (
   let chunkOrder = 0;
   let currentChunk: string[] = [];
   let inList = false;
+  let listIndentLevel = 0;
 
   const lines = markdown.split('\n');
 
@@ -45,6 +46,33 @@ export const parseMarkdown = async (
     return /^[-*+]|\d+\./.test(line.trim());
   };
 
+  const getIndentLevel = (line: string) => {
+    return line.match(/^\s*/)?.[0].length || 0;
+  };
+
+  const isListContent = (line: string) => {
+    const trimmed = line.trim();
+    if (!trimmed) return true; // Empty lines within a list
+
+    const indent = getIndentLevel(line);
+    // Consider it list content if:
+    // 1. It's a new list item
+    // 2. It's indented more than the list start
+    // 3. It's an empty line (already handled above)
+    return isListMarker(line) || indent > listIndentLevel;
+  };
+
+  const lookAheadForList = (currentIndex: number) => {
+    // Look ahead a few lines to see if we're still in a list context
+    for (let i = currentIndex + 1; i < Math.min(lines.length, currentIndex + 3); i++) {
+      const line = lines[i];
+      if (line.trim() && (isListMarker(line) || getIndentLevel(line) > listIndentLevel)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
@@ -55,6 +83,7 @@ export const parseMarkdown = async (
       if (currentChunk.length > 0) {
         addChunk(currentChunk);
         currentChunk = [];
+        inList = false;
       }
 
       // Update current H1 if this is a chapter header
@@ -69,27 +98,35 @@ export const parseMarkdown = async (
 
     // Handle lists
     if (settings.preserveLists) {
-      if (isListMarker(line)) {
-        if (!inList) {
-          // Start new list chunk
-          if (currentChunk.length > 0) {
-            addChunk(currentChunk);
-            currentChunk = [];
-          }
-          inList = true;
+      if (isListMarker(line) && !inList) {
+        // Start of a new list
+        if (currentChunk.length > 0) {
+          addChunk(currentChunk);
+          currentChunk = [];
         }
+        inList = true;
+        listIndentLevel = getIndentLevel(line);
         currentChunk.push(line);
         continue;
-      } else if (inList) {
-        // Continue list if indented or empty line
-        if (line.startsWith('    ') || !trimmed) {
+      }
+
+      if (inList) {
+        if (!trimmed && lookAheadForList(i)) {
+          // Empty line with more list content ahead
+          currentChunk.push(line);
+          continue;
+        }
+
+        if (isListContent(line)) {
+          // Continue the list
           currentChunk.push(line);
           continue;
         } else {
-          // List ended
+          // List has ended
           addChunk(currentChunk);
-          currentChunk = [];
+          currentChunk = [line];
           inList = false;
+          continue;
         }
       }
     }
