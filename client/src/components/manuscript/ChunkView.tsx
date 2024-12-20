@@ -374,6 +374,24 @@ export function ChunkView({ chunk, isAuthor, onChunkChange, allChunks }: ChunkVi
                 <div className="w-1/3 flex items-center justify-end gap-2">
                   {isAuthor && (
                     <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsEditing(!isEditing)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit Manuscript</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  {isAuthor && (
+                    <TooltipProvider>
                       <Dialog>
                         <Tooltip>
                           <TooltipTrigger asChild>
