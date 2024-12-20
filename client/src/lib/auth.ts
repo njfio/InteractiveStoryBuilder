@@ -1,53 +1,102 @@
 import { supabase } from './supabase';
 import { create } from 'zustand';
 
-interface AuthStore {
-  user: any | null;
-  loading: boolean;
-  setUser: (user: any | null) => void;
-  setLoading: (loading: boolean) => void;
-}
-
-export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
-  loading: true,
-  setUser: (user) => set({ user }),
-  setLoading: (loading) => set({ loading }),
-}));
-
-export const initAuth = async () => {
-  const { setUser, setLoading } = useAuthStore.getState();
-  console.log('Initializing auth...');
-
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('Initial session:', session);
-    setUser(session?.user ?? null);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user);
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  } catch (error) {
-    console.error('Error initializing auth:', error);
-  } finally {
-    setLoading(false);
-  }
+type User = {
+  id: string;
+  email: string | undefined;
+  displayName?: string;
 };
 
+interface AuthState {
+  user: User | null;
+  loading: boolean;
+  initialized: boolean;
+  setUser: (user: User | null) => void;
+  setLoading: (loading: boolean) => void;
+  initialize: () => Promise<(() => void) | undefined>;
+  checkSession: () => Promise<boolean>;
+}
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  loading: true,
+  initialized: false,
+  setUser: (user) => set({ user }),
+  setLoading: (loading) => set({ loading }),
+  initialize: async () => {
+    if (get().initialized) {
+      return undefined;
+    }
+
+    try {
+      set({ loading: true });
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        set({
+          user: {
+            id: session.user.id,
+            email: session.user.email,
+          },
+          loading: false,
+          initialized: true,
+        });
+      } else {
+        set({ user: null, loading: false, initialized: true });
+      }
+
+      // Subscribe to auth state changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          set({
+            user: {
+              id: session.user.id,
+              email: session.user.email,
+            },
+            loading: false,
+          });
+        } else {
+          set({ user: null, loading: false });
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+      set({ user: null, loading: false, initialized: true });
+      return undefined;
+    }
+  },
+  checkSession: async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        set({
+          user: {
+            id: session.user.id,
+            email: session.user.email,
+          },
+        });
+        return true;
+      }
+      set({ user: null });
+      return false;
+    } catch (error) {
+      console.error('Error checking session:', error);
+      set({ user: null });
+      return false;
+    }
+  },
+}));
+
 export const signIn = async (email: string, password: string) => {
-  console.log('Attempting sign in for:', email);
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
-  if (error) {
-    console.error('Sign in error:', error);
-    throw error;
-  }
-  console.log('Sign in successful:', data);
+  if (error) throw error;
   return data;
 };
 
@@ -69,8 +118,7 @@ export const signOut = async () => {
 };
 
 export const requireAuth = () => {
-  const { user, loading } = useAuthStore.getState();
-  if (loading) return true;
-  if (!user) return false;
-  return true;
+  const { user, loading, initialized } = useAuthStore.getState();
+  if (!initialized || loading) return true;
+  return !!user;
 };

@@ -5,7 +5,6 @@ import { ChunkView } from '@/components/manuscript/ChunkView';
 import { useAuthStore } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 import { ExportDialog } from '@/components/manuscript/ExportDialog';
-import { supabase } from '@/lib/supabase';
 
 interface Chunk {
   id: number;
@@ -43,36 +42,41 @@ interface Manuscript {
 export function Reader() {
   const [, params] = useRoute('/reader/:id');
   const [, setLocation] = useLocation();
-  const { user, initialize } = useAuthStore();
+  const { user, loading, initialized, initialize } = useAuthStore();
   const [activeChunk, setActiveChunk] = useState<Chunk | null>(null);
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const manuscriptId = params?.id ? parseInt(params.id) : NaN;
 
-  // Check auth status on mount
+  // Initialize auth state
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      await initialize();
-      setIsAuthChecked(true);
-
-      if (!session) {
-        setLocation('/login');
-      }
+    const init = async () => {
+      const cleanup = await initialize();
+      return cleanup;
     };
 
-    checkAuth();
-  }, [initialize, setLocation]);
+    const cleanup = init();
+    return () => {
+      cleanup.then(fn => fn?.());
+    };
+  }, [initialize]);
 
   // Query manuscript data
   const { data: manuscript, isLoading: isLoadingManuscript } = useQuery<Manuscript>({
-    queryKey: [`/api/manuscripts/${params?.id}`],
-    enabled: !!params?.id && isAuthChecked && !!user,
+    queryKey: [`/api/manuscripts/${manuscriptId}`],
+    enabled: !isNaN(manuscriptId) && initialized && !loading && !!user,
   });
 
   // Query chunks data
   const { data: chunks = [], isLoading: isLoadingChunks } = useQuery<Chunk[]>({
-    queryKey: [`/api/manuscripts/${params?.id}/chunks`],
-    enabled: !!params?.id && !!manuscript && isAuthChecked && !!user,
+    queryKey: [`/api/manuscripts/${manuscriptId}/chunks`],
+    enabled: !isNaN(manuscriptId) && !!manuscript && initialized && !loading && !!user,
   });
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (initialized && !loading && !user) {
+      setLocation('/login');
+    }
+  }, [initialized, loading, user, setLocation]);
 
   // Sync active chunk with URL
   useEffect(() => {
@@ -89,13 +93,13 @@ export function Reader() {
       }
     } else {
       // Set first chunk as default
-      setLocation(`/reader/${params?.id}?chunk=${chunks[0].id}`);
+      setLocation(`/reader/${manuscriptId}?chunk=${chunks[0].id}`, { replace: true });
       setActiveChunk(chunks[0]);
     }
-  }, [chunks, params?.id, setLocation, activeChunk]);
+  }, [chunks, manuscriptId, setLocation, activeChunk]);
 
-  // Show loading state while checking auth or loading data
-  if (!isAuthChecked || isLoadingManuscript || isLoadingChunks) {
+  // Show loading state
+  if (!initialized || loading || isLoadingManuscript || isLoadingChunks) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -122,7 +126,7 @@ export function Reader() {
     const newChunk = chunks.find(c => c.id === chunkId);
     if (newChunk && newChunk !== activeChunk) {
       setActiveChunk(newChunk);
-      setLocation(`/reader/${params?.id}?chunk=${chunkId}`);
+      setLocation(`/reader/${manuscriptId}?chunk=${chunkId}`, { replace: true });
       window.scrollTo(0, 0);
     }
   };
