@@ -101,8 +101,11 @@ export const parseMarkdown = async (
     }
 
     if (inPreviewSection) {
-      // If we are in a preview section, everything goes into currentChunk until next header
+      // If we are in a preview section, everything goes into currentChunk until next header or end
+      // If we encounter a header, that will flush
       currentChunk.push(line);
+      // Don't continue yet, because we might still want to catch if next line is a header
+      // We'll just keep accumulating until a header flushes it.
       continue;
     }
 
