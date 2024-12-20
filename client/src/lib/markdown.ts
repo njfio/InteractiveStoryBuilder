@@ -1,7 +1,6 @@
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
-import { visit } from 'unist-util-visit';
 
 interface ChunkData {
   headingH1?: string;
@@ -18,81 +17,122 @@ export const parseMarkdown = async (
   markdown: string,
   settings: ChunkSettings = { preserveLists: true, minLines: 2 }
 ): Promise<ChunkData[]> => {
-  const processor = unified()
-    .use(remarkParse)
-    .use(remarkGfm);
-
-  const ast = await processor.parse(markdown);
   const chunks: ChunkData[] = [];
   let currentH1: string | undefined;
   let chunkOrder = 0;
-  let inList = false;
+
+  // Split content into lines
   const lines = markdown.split('\n');
+  let currentChunk: string[] = [];
+  let inList = false;
+  let inCodeBlock = false;
 
-  const isValidChunk = (text: string): boolean => {
-    if (!text.trim()) return false;
+  const addChunk = (lines: string[], force = false) => {
+    const text = lines.join('\n').trim();
+    if (!text) return;
+
+    // Check if chunk meets minimum line requirement or is forced
     const nonEmptyLines = text.split('\n').filter(line => line.trim()).length;
-    return nonEmptyLines >= (settings.minLines || 2);
-  };
-
-  const addChunk = (text: string) => {
-    if (isValidChunk(text)) {
+    if (force || nonEmptyLines >= (settings.minLines || 2)) {
       chunks.push({
         headingH1: currentH1,
-        text: text.trim(),
+        text,
         order: chunkOrder++
       });
     }
   };
 
-  visit(ast, (node: any) => {
-    if (!node.position) return;
-
-    const { start, end } = node.position;
-    const nodeText = lines.slice(start.line - 1, end.line).join('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+    const nextLine = i < lines.length - 1 ? lines[i + 1].trim() : '';
 
     // Handle headings
-    if (node.type === 'heading') {
-      if (node.depth === 1) {
-        currentH1 = nodeText.replace(/^#\s+/, '').trim();
-        addChunk(nodeText);
-      } else {
-        addChunk(nodeText);
+    if (trimmedLine.startsWith('#')) {
+      if (currentChunk.length > 0) {
+        addChunk(currentChunk);
+        currentChunk = [];
       }
-      return;
-    }
 
-    // Handle lists
-    if (node.type === 'list' || node.parent?.type === 'list') {
-      if (settings.preserveLists) {
-        if (!inList) {
-          inList = true;
-          addChunk(nodeText);
-        }
+      if (trimmedLine.startsWith('# ')) {
+        currentH1 = trimmedLine.replace(/^#\s+/, '');
+        addChunk([line], true);
       } else {
-        addChunk(nodeText);
+        currentChunk = [line];
+        addChunk(currentChunk, true);
+        currentChunk = [];
       }
-      return;
-    }
-
-    // Reset list context
-    if (inList && node.type !== 'list' && node.parent?.type !== 'list') {
-      inList = false;
-    }
-
-    // Handle paragraphs and other block content
-    if ((node.type === 'paragraph' || node.type === 'blockquote') && 
-        (!node.parent || node.parent.type === 'root')) {
-      addChunk(nodeText);
-      return;
+      continue;
     }
 
     // Handle code blocks
-    if (node.type === 'code') {
-      addChunk(nodeText);
-      return;
+    if (trimmedLine.startsWith('```')) {
+      if (!inCodeBlock) {
+        if (currentChunk.length > 0) {
+          addChunk(currentChunk);
+          currentChunk = [];
+        }
+        inCodeBlock = true;
+        currentChunk = [line];
+      } else {
+        inCodeBlock = false;
+        currentChunk.push(line);
+        addChunk(currentChunk, true);
+        currentChunk = [];
+      }
+      continue;
     }
-  });
+
+    if (inCodeBlock) {
+      currentChunk.push(line);
+      continue;
+    }
+
+    // Handle lists
+    const isListItem = /^[-*+]|\d+\./.test(trimmedLine);
+    if (isListItem) {
+      if (!inList && settings.preserveLists) {
+        if (currentChunk.length > 0) {
+          addChunk(currentChunk);
+          currentChunk = [];
+        }
+        inList = true;
+      }
+      currentChunk.push(line);
+      continue;
+    }
+
+    // Handle end of lists
+    if (inList && !trimmedLine && settings.preserveLists) {
+      if (!nextLine || !/^[-*+]|\d+\./.test(nextLine)) {
+        inList = false;
+        addChunk(currentChunk);
+        currentChunk = [];
+      }
+      continue;
+    }
+
+    // Handle paragraphs and blank lines
+    if (!trimmedLine) {
+      if (currentChunk.length > 0 && (!inList || !settings.preserveLists)) {
+        addChunk(currentChunk);
+        currentChunk = [];
+      }
+    } else {
+      if (currentChunk.length === 0 || currentChunk[currentChunk.length - 1].trim()) {
+        currentChunk.push(line);
+      } else {
+        // If last line was blank, this is a new paragraph
+        addChunk(currentChunk);
+        currentChunk = [line];
+      }
+    }
+  }
+
+  // Add any remaining content
+  if (currentChunk.length > 0) {
+    addChunk(currentChunk);
+  }
 
   return chunks;
 };
