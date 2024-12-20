@@ -8,10 +8,11 @@ import { EditorView } from '@codemirror/view';
 interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onEditorMount?: (editor: any) => void;
   className?: string;
 }
 
-export function MarkdownEditor({ value, onChange, className = '' }: MarkdownEditorProps) {
+export function MarkdownEditor({ value, onChange, onEditorMount, className = '' }: MarkdownEditorProps) {
   return (
     <CodeMirror
       value={value}
@@ -19,6 +20,9 @@ export function MarkdownEditor({ value, onChange, className = '' }: MarkdownEdit
       className={className}
       height="500px"
       theme={oneDark}
+      onCreateEditor={(view) => {
+        onEditorMount?.(view);
+      }}
       extensions={[
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         EditorView.lineWrapping,

@@ -18,7 +18,6 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarkdownEditor } from './MarkdownEditor';
 import { ChunkPreview } from './ChunkPreview';
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -28,6 +27,7 @@ const formSchema = z.object({
 export function ManuscriptUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [currentChunks, setCurrentChunks] = useState<any[]>([]);
+  const [editorRef, setEditorRef] = useState<any>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -37,6 +37,17 @@ export function ManuscriptUpload() {
       markdown: '',
     },
   });
+
+  const handleChunkSelect = (chunkText: string) => {
+    if (editorRef) {
+      const content = form.getValues('markdown');
+      const position = content.indexOf(chunkText);
+      if (position !== -1) {
+        editorRef.focus();
+        editorRef.setSelection({ line: 0, ch: position }, { line: 0, ch: position + chunkText.length });
+      }
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsUploading(true);
@@ -107,18 +118,17 @@ export function ManuscriptUpload() {
                         <MarkdownEditor
                           value={field.value}
                           onChange={field.onChange}
+                          onEditorMount={setEditorRef}
                           className="min-h-[400px] border rounded-md"
                         />
 
                         {field.value && (
                           <Card className="mt-4">
-                            <CardHeader>
-                              <CardTitle className="text-lg">Content Chunks Preview</CardTitle>
-                            </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-6">
                               <ChunkPreview 
                                 markdown={field.value}
-                                onChange={setCurrentChunks} 
+                                onChange={setCurrentChunks}
+                                onChunkSelect={handleChunkSelect}
                               />
                             </CardContent>
                           </Card>

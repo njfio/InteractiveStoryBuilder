@@ -10,17 +10,19 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDownCircle, ChevronUpCircle } from 'lucide-react';
 
 interface ChunkPreviewProps {
   markdown: string;
   onChange?: (chunks: any[]) => void;
+  onChunkSelect?: (chunkText: string) => void;
 }
 
-export function ChunkPreview({ markdown, onChange }: ChunkPreviewProps) {
+export function ChunkPreview({ markdown, onChange, onChunkSelect }: ChunkPreviewProps) {
   const [chunks, setChunks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   useEffect(() => {
     if (!markdown) {
@@ -44,6 +46,14 @@ export function ChunkPreview({ markdown, onChange }: ChunkPreviewProps) {
 
     parseContent();
   }, [markdown, onChange]);
+
+  const toggleAllChunks = () => {
+    if (expandedItems.length === chunks.length) {
+      setExpandedItems([]);
+    } else {
+      setExpandedItems(chunks.map((_, index) => index.toString()));
+    }
+  };
 
   if (loading) {
     return (
@@ -69,17 +79,49 @@ export function ChunkPreview({ markdown, onChange }: ChunkPreviewProps) {
     );
   }
 
+  const isAllExpanded = expandedItems.length === chunks.length;
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Content Chunks Preview</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-base font-medium">Content Chunks ({chunks.length})</CardTitle>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2"
+          onClick={toggleAllChunks}
+        >
+          {isAllExpanded ? (
+            <>
+              <ChevronUpCircle className="mr-2 h-4 w-4" />
+              Collapse All
+            </>
+          ) : (
+            <>
+              <ChevronDownCircle className="mr-2 h-4 w-4" />
+              Expand All
+            </>
+          )}
+        </Button>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
-          <Accordion type="multiple" className="w-full">
+          <Accordion
+            type="multiple"
+            value={expandedItems}
+            onValueChange={setExpandedItems}
+            className="w-full"
+          >
             {chunks.map((chunk, index) => (
-              <AccordionItem key={index} value={index.toString()}>
-                <AccordionTrigger className="text-sm">
+              <AccordionItem 
+                key={index} 
+                value={index.toString()}
+                className="border-b last:border-0"
+              >
+                <AccordionTrigger
+                  onClick={() => onChunkSelect?.(chunk.text)}
+                  className="text-sm hover:bg-muted/50 px-4 -mx-4"
+                >
                   {chunk.headingH1 ? (
                     <span className="font-semibold">{chunk.headingH1}</span>
                   ) : (
