@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { ManuscriptUpload } from '@/components/manuscript/ManuscriptUpload';
+import { ManuscriptSettings } from '@/components/manuscript/ManuscriptSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { requireAuth } from '@/lib/auth';
-import { Loader2, Book, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Loader2, Book, Image as ImageIcon, Trash2, Settings } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ export function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showUpload, setShowUpload] = useState(false);
+  const [showSettings, setShowSettings] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
 
   // Check authentication
@@ -144,7 +146,7 @@ export function Dashboard() {
               <CardTitle className="text-xl">{manuscript.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -161,6 +163,15 @@ export function Dashboard() {
                 >
                   <ImageIcon className="mr-2 h-4 w-4" />
                   Generate Images
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSettings(manuscript.id)}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
                 </Button>
 
                 <AlertDialog>
@@ -198,6 +209,19 @@ export function Dashboard() {
           </Card>
         ))}
       </div>
+
+      <Dialog open={!!showSettings} onOpenChange={(open) => !open && setShowSettings(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manuscript Settings</DialogTitle>
+          </DialogHeader>
+          {showSettings && (
+            <ManuscriptSettings
+              manuscript={manuscripts.find((m: any) => m.id === showSettings)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

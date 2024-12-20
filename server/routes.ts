@@ -355,7 +355,7 @@ export function registerRoutes(app: Express): Server {
 
   // Manuscript Settings
   app.put('/api/manuscripts/:id/settings', requireAuth, async (req, res) => {
-    const { imageSettings } = req.body;
+    const { title, authorName, isPublic, imageSettings } = req.body;
     const user = req.user;
 
     if (!user) {
@@ -377,6 +377,9 @@ export function registerRoutes(app: Express): Server {
     const [updated] = await db
       .update(manuscripts)
       .set({ 
+        title,
+        authorName,
+        isPublic,
         imageSettings,
         updatedAt: new Date()
       })

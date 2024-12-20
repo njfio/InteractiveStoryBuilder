@@ -12,6 +12,8 @@ export const manuscripts = pgTable("manuscripts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  authorName: text("author_name"),
+  isPublic: boolean("is_public").default(false).notNull(),
   originalMarkdown: text("original_markdown").notNull(),
   imageSettings: jsonb("image_settings").default({
     seed: 469,
