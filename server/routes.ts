@@ -1,13 +1,16 @@
 import type { Express, Request } from 'express';
 import { createServer, type Server } from 'http';
 import { db } from '@db';
-import { manuscripts, chunks, images, seoMetadata, users } from '@db/schema';
+import { manuscripts, chunks, users } from '@db/schema';
 import { createClient } from '@supabase/supabase-js';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import EPub from 'epub-gen';
+import { requireAuth } from './middleware/auth';
+import { eq, sql } from 'drizzle-orm';
+import { parseMarkdown } from '../client/src/lib/markdown';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -16,17 +19,11 @@ const supabase = createClient(
 
 // Helper function to get the public URL
 function getPublicUrl(req: Request): string {
-  // For Replit: use the request host
   const host = req.get('host') || 'localhost:5000';
   const protocol = req.protocol || 'http';
   return `${protocol}://${host}`;
 }
-import { requireAuth } from './middleware/auth';
-import { eq, sql } from 'drizzle-orm';
-import { parseMarkdown } from '../client/src/lib/markdown';
-import { generateImage } from './utils/image';
 
-// Extend Express Request type to include user
 declare global {
   namespace Express {
     interface Request {
@@ -40,7 +37,7 @@ declare global {
 
 export function registerRoutes(app: Express): Server {
   // Manuscripts
-  app.get('/api/manuscripts', async (req, res) => {
+  app.get('/api/manuscripts', requireAuth, async (req, res) => {
     const results = await db.query.manuscripts.findMany({
       with: {
         author: true,
@@ -59,6 +56,8 @@ export function registerRoutes(app: Express): Server {
         id: true,
         title: true,
         authorId: true,
+        authorName: true,
+        isPublic: true,
         imageSettings: true,
         updatedAt: true,
       },
@@ -152,12 +151,6 @@ export function registerRoutes(app: Express): Server {
           text: true,
         },
         with: {
-          images: {
-            columns: {
-              localPath: true,
-            },
-            limit: 1,
-          },
           manuscript: {
             columns: {
               id: true,
@@ -170,13 +163,8 @@ export function registerRoutes(app: Express): Server {
         orderBy: (chunks, { asc }) => [asc(chunks.chunkOrder)],
       });
 
-      const chunksWithImages = results.map(chunk => ({
-        ...chunk,
-        imageUrl: chunk.images?.[0]?.localPath
-      }));
-
       console.timeEnd('chunks-query');
-      res.json(chunksWithImages);
+      res.json(results);
     } catch (error) {
       console.error('Error fetching chunks:', error);
       res.status(500).json({ message: 'Failed to fetch chunks' });
@@ -355,38 +343,42 @@ export function registerRoutes(app: Express): Server {
 
   // Manuscript Settings
   app.put('/api/manuscripts/:id/settings', requireAuth, async (req, res) => {
-    const { title, authorName, isPublic, imageSettings } = req.body;
-    const user = req.user;
+    try {
+      const { title, authorName, isPublic } = req.body;
+      const user = req.user;
 
-    if (!user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      if (!user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.id)),
+      });
+
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      if (manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      const [updated] = await db
+        .update(manuscripts)
+        .set({ 
+          title,
+          authorName,
+          isPublic,
+          updatedAt: new Date()
+        })
+        .where(eq(manuscripts.id, manuscript.id))
+        .returning();
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating manuscript settings:', error);
+      res.status(500).json({ message: 'Failed to update manuscript settings' });
     }
-
-    const manuscript = await db.query.manuscripts.findFirst({
-      where: eq(manuscripts.id, parseInt(req.params.id)),
-    });
-
-    if (!manuscript) {
-      return res.status(404).json({ message: 'Manuscript not found' });
-    }
-
-    if (manuscript.authorId !== user.id) {
-      return res.status(403).json({ message: 'Forbidden' });
-    }
-
-    const [updated] = await db
-      .update(manuscripts)
-      .set({ 
-        title,
-        authorName,
-        isPublic,
-        imageSettings,
-        updatedAt: new Date()
-      })
-      .where(eq(manuscripts.id, manuscript.id))
-      .returning();
-
-    res.json(updated);
   });
 
   // Image Generation
@@ -423,9 +415,6 @@ export function registerRoutes(app: Express): Server {
       }
 
       console.log(`Generating image for chunk ${chunkId} with prompt: ${prompt}`);
-
-      // Delete any existing images for this chunk
-      await db.delete(images).where(eq(images.chunkId, chunkId));
 
       // Get the manuscript with its settings
       const manuscript = await db.query.manuscripts.findFirst({
