@@ -67,6 +67,47 @@ export function registerRoutes(app: Express): Server {
     res.json(result);
   });
 
+  // Manuscript Settings
+  app.put('/api/manuscripts/:id/settings', requireAuth, async (req, res) => {
+    try {
+      const { title, authorName, isPublic, imageSettings } = req.body;
+      const user = req.user;
+
+      if (!user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.id)),
+      });
+
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      if (manuscript.authorId !== user.id) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      const [updated] = await db
+        .update(manuscripts)
+        .set({
+          title,
+          authorName,
+          isPublic,
+          imageSettings,
+          updatedAt: new Date()
+        })
+        .where(eq(manuscripts.id, manuscript.id))
+        .returning();
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating manuscript settings:', error);
+      res.status(500).json({ message: 'Failed to update manuscript settings' });
+    }
+  });
+
   // Image Generation
   app.post('/api/generate-image', requireAuth, async (req, res) => {
     const { chunkId, prompt } = req.body;
@@ -139,45 +180,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Manuscript Settings
-  app.put('/api/manuscripts/:id/settings', requireAuth, async (req, res) => {
-    try {
-      const { title, authorName, isPublic } = req.body;
-      const user = req.user;
-
-      if (!user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
-      const manuscript = await db.query.manuscripts.findFirst({
-        where: eq(manuscripts.id, parseInt(req.params.id)),
-      });
-
-      if (!manuscript) {
-        return res.status(404).json({ message: 'Manuscript not found' });
-      }
-
-      if (manuscript.authorId !== user.id) {
-        return res.status(403).json({ message: 'Forbidden' });
-      }
-
-      const [updated] = await db
-        .update(manuscripts)
-        .set({
-          title,
-          authorName,
-          isPublic,
-          updatedAt: new Date()
-        })
-        .where(eq(manuscripts.id, manuscript.id))
-        .returning();
-
-      res.json(updated);
-    } catch (error) {
-      console.error('Error updating manuscript settings:', error);
-      res.status(500).json({ message: 'Failed to update manuscript settings' });
-    }
-  });
   // Chunks
   app.get('/api/manuscripts/:id/chunks', async (req, res) => {
     console.time('chunks-query');
@@ -396,45 +398,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Manuscript Settings
-  app.put('/api/manuscripts/:id/settings', requireAuth, async (req, res) => {
-    try {
-      const { title, authorName, isPublic } = req.body;
-      const user = req.user;
-
-      if (!user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
-      const manuscript = await db.query.manuscripts.findFirst({
-        where: eq(manuscripts.id, parseInt(req.params.id)),
-      });
-
-      if (!manuscript) {
-        return res.status(404).json({ message: 'Manuscript not found' });
-      }
-
-      if (manuscript.authorId !== user.id) {
-        return res.status(403).json({ message: 'Forbidden' });
-      }
-
-      const [updated] = await db
-        .update(manuscripts)
-        .set({
-          title,
-          authorName,
-          isPublic,
-          updatedAt: new Date()
-        })
-        .where(eq(manuscripts.id, manuscript.id))
-        .returning();
-
-      res.json(updated);
-    } catch (error) {
-      console.error('Error updating manuscript settings:', error);
-      res.status(500).json({ message: 'Failed to update manuscript settings' });
-    }
-  });
 
   // Image Galleries
   app.get('/api/images', async (req, res) => {
@@ -678,7 +641,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  const httpServer = createServer(app);
   // Export Manuscript
   app.get('/api/manuscripts/:id/export', async (req, res) => {
     try {
@@ -932,5 +894,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  const httpServer = createServer(app);
   return httpServer;
 }
