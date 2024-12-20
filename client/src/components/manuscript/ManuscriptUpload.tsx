@@ -16,10 +16,12 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarkdownEditor } from './MarkdownEditor';
@@ -106,7 +108,12 @@ export function ManuscriptUpload() {
   return (
     <Dialog>
       <DialogContent className="w-[90vw] max-w-[1400px] h-[90vh] overflow-y-auto">
-        <DialogTitle>Upload Manuscript</DialogTitle>
+        <DialogHeader>
+          <DialogTitle>Upload Manuscript</DialogTitle>
+          <DialogDescription>
+            Upload your manuscript content in markdown format
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
