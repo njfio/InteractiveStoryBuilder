@@ -29,6 +29,7 @@ export const parseMarkdown = async (
   let inCodeBlock = false;
   let inList = false;
   let listContent: string[] = [];
+  let lastLineWasEmpty = false;
 
   const addChunk = (lines: string[], force = false) => {
     const text = lines.join('\n').trim();
@@ -62,32 +63,33 @@ export const parseMarkdown = async (
     return /^[-*+]|\d+\./.test(trimmed);
   };
 
-  const processParagraph = () => {
-    if (currentChunk.length > 0) {
-      paragraphCount++;
-      const maxParagraphs = settings.paragraphsPerChunk || 1;
-
-      if (paragraphCount >= maxParagraphs) {
-        addChunk(currentChunk);
-        currentChunk = [];
-        paragraphCount = 0;
-      }
-    }
+  const shouldCreateNewChunk = () => {
+    const maxParagraphs = settings.paragraphsPerChunk || 1;
+    return paragraphCount >= maxParagraphs;
   };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmedLine = line.trim();
+    const nextLine = lines[i + 1]?.trim();
 
     // Handle headings
     if (trimmedLine.startsWith('#')) {
       if (inList) {
+        // Finish the current list
         currentChunk.push(...listContent);
         listContent = [];
         inList = false;
-        processParagraph();
+        if (shouldCreateNewChunk()) {
+          addChunk(currentChunk);
+          currentChunk = [];
+          paragraphCount = 0;
+        }
       } else if (currentChunk.length > 0) {
-        processParagraph();
+        // Add current content as chunk
+        addChunk(currentChunk);
+        currentChunk = [];
+        paragraphCount = 0;
       }
 
       if (trimmedLine.startsWith('# ')) {
@@ -106,9 +108,15 @@ export const parseMarkdown = async (
           currentChunk.push(...listContent);
           listContent = [];
           inList = false;
-          processParagraph();
+          if (shouldCreateNewChunk()) {
+            addChunk(currentChunk);
+            currentChunk = [];
+            paragraphCount = 0;
+          }
         } else if (currentChunk.length > 0) {
-          processParagraph();
+          addChunk(currentChunk);
+          currentChunk = [];
+          paragraphCount = 0;
         }
         inCodeBlock = true;
       } else {
@@ -131,7 +139,12 @@ export const parseMarkdown = async (
       if (isListStart(line) && !inList) {
         // Start new list
         if (currentChunk.length > 0) {
-          processParagraph();
+          // Complete current paragraph before starting list
+          if (shouldCreateNewChunk()) {
+            addChunk(currentChunk);
+            currentChunk = [];
+            paragraphCount = 0;
+          }
         }
         inList = true;
         listContent = [line];
@@ -140,32 +153,54 @@ export const parseMarkdown = async (
         listContent.push(line);
 
         // Check if list ends
-        const nextLine = lines[i + 1]?.trim();
-        if (!nextLine || (!isListStart(nextLine) && nextLine.length > 0 && !line.trim())) {
+        if (!nextLine || (!isListStart(nextLine) && !line.trim() && !isListStart(lines[i + 2]?.trim()))) {
+          // Add list as a single paragraph
           currentChunk.push(...listContent);
           listContent = [];
           inList = false;
-          processParagraph();
-        }
-      } else if (!trimmedLine) {
-        // Handle blank lines outside lists
-        if (currentChunk.length > 0) {
-          currentChunk.push(line);
-          if (!inList) {
-            processParagraph();
+          paragraphCount++;
+
+          if (shouldCreateNewChunk()) {
+            addChunk(currentChunk);
+            currentChunk = [];
+            paragraphCount = 0;
           }
         }
       } else {
-        // Regular content
-        currentChunk.push(line);
+        // Handle regular content
+        if (!trimmedLine && currentChunk.length > 0) {
+          // Blank line after content indicates paragraph end
+          currentChunk.push(line);
+          if (!lastLineWasEmpty) {
+            paragraphCount++;
+            if (shouldCreateNewChunk()) {
+              addChunk(currentChunk);
+              currentChunk = [];
+              paragraphCount = 0;
+            }
+          }
+          lastLineWasEmpty = true;
+        } else if (trimmedLine) {
+          currentChunk.push(line);
+          lastLineWasEmpty = false;
+        }
       }
     } else {
       // When not preserving lists, treat everything as regular content
       if (!trimmedLine && currentChunk.length > 0) {
         currentChunk.push(line);
-        processParagraph();
+        if (!lastLineWasEmpty) {
+          paragraphCount++;
+          if (shouldCreateNewChunk()) {
+            addChunk(currentChunk);
+            currentChunk = [];
+            paragraphCount = 0;
+          }
+        }
+        lastLineWasEmpty = true;
       } else if (trimmedLine) {
         currentChunk.push(line);
+        lastLineWasEmpty = false;
       }
     }
   }
