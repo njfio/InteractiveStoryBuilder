@@ -42,36 +42,18 @@ export function registerRoutes(app: Express): Server {
 
       console.log(`Generating image for chunk ${chunkId} with prompt: ${prompt}`);
 
-      // Call Replicate API for image generation
-      const response = await fetch('https://api.replicate.com/v1/predictions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          version: "7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc",
-          input: {
-            prompt: prompt || chunk.text,
-            negative_prompt: "blurry, bad anatomy, bad hands, cropped, worst quality",
-            num_inference_steps: 50,
-            guidance_scale: 7.5,
-          }
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Replicate API error: ${response.statusText}`);
-      }
-
-      const prediction = await response.json();
-      console.log('Image generation started:', prediction);
+      // Use manuscript's image settings for generation
+      const imageUrl = await generateImage(
+        prompt || chunk.text,
+        chunk.manuscript.imageSettings,
+        null // character reference not needed for this generation
+      );
 
       // Update chunk with image URL
       const [updated] = await db
         .update(chunks)
         .set({ 
-          imageUrl: prediction.output?.[0] || null,
+          imageUrl,
           updatedAt: new Date()
         })
         .where(eq(chunks.id, chunkId))
@@ -553,6 +535,7 @@ export function registerRoutes(app: Express): Server {
       const token = authHeader.split(' ')[1];
       const { data: { user }, error } = await supabase.auth.getUser(token);
       
+
       if (error || !user) {
         console.error('Auth error:', error);
         return res.status(401).json({ message: 'Invalid token' });
@@ -659,19 +642,23 @@ async function generateImage(prompt: string, settings: any, characterReferenceUr
   }
 
   // Call Replicate API for image generation
-  const response = await fetch('https://api.replicate.com/v1/predictions', {
+  const response = await fetch('https://api.replicate.com/v1/models/luma/photon/predictions', {
     method: 'POST',
     headers: {
       'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
       'Content-Type': 'application/json',
+      'Prefer': 'wait'
     },
     body: JSON.stringify({
-      version: "7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc",
       input: {
         prompt,
-        negative_prompt: "blurry, bad anatomy, bad hands, cropped, worst quality",
-        num_inference_steps: 50,
-        guidance_scale: 7.5,
+        seed: settings?.seed || Math.floor(Math.random() * 1000000),
+        aspect_ratio: settings?.aspect_ratio || "4:3",
+        image_reference_url: settings?.image_reference_url || null,
+        style_reference_url: settings?.style_reference_url || null,
+        image_reference_weight: settings?.image_reference_weight || 0.85,
+        style_reference_weight: settings?.style_reference_weight || 0.85,
+        character_reference_url: characterReferenceUrl
       }
     }),
   });
