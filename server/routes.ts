@@ -13,6 +13,7 @@ import { eq, sql } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
 import { generateImage } from './utils/image';
 import archiver from 'archiver';
+import { createWriteStream } from 'fs';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -938,7 +939,7 @@ export function registerRoutes(app: Express): Server {
           const outputFile = join(exportDir, `${sanitizedTitle}.docx`);
 
           try {
-            console.log('Writing markdown content to temporaryfile...');
+            console.log('Writing markdown content totemporaryfile...');
             await fs.writeFile(inputFile, content);
 
             console.log('Converting markdownto DOCX using pandoc with images...');
@@ -1014,12 +1015,21 @@ export function registerRoutes(app: Express): Server {
       const zipFilePath = join(tempDir, zipFileName);
 
       // Create a write stream for the zip file
-      const output = fs.createWriteStream(zipFilePath);
+      const output = createWriteStream(zipFilePath);
       const archive = archiver('zip', {
         zlib: { level: 9 } // Maximum compression
       });
 
-      // Pipe archive data to the file
+      // Set up error handling for both the archive and output stream
+      output.on('error', (err) => {
+        throw err;
+      });
+
+      archive.on('error', (err) => {
+        throw err;
+      });
+
+      // Pipe archive data to the output file
       archive.pipe(output);
 
       // Add each image to the archive
@@ -1027,27 +1037,38 @@ export function registerRoutes(app: Express): Server {
         const imagePath = join(process.cwd(), 'public', image.localPath);
         const imageFileName = image.localPath.split('/').pop();
         try {
+          // Check if the file exists before trying to add it
+          await fs.access(imagePath);
           archive.file(imagePath, { name: imageFileName });
         } catch (err) {
           console.error(`Failed to add image to archive: ${imagePath}`, err);
+          continue; // Skip this image if there's an error
         }
       }
 
-      // Finalize the archive and send the response
-      await archive.finalize();
-
-      // Wait for the write stream to finish
-      await new Promise((resolve, reject) => {
+      // Create a promise that resolves when the archive is finalized
+      const archiveFinalize = new Promise((resolve, reject) => {
         output.on('close', resolve);
         output.on('error', reject);
       });
 
+      // Finalize the archive
+      await archive.finalize();
+
+      // Wait for the archive to be fully written
+      await archiveFinalize;
+
       // Send the zip file
-      res.download(zipFilePath, zipFileName, () => {
-        // Clean up the temporary zip file after sending
-        fs.unlink(zipFilePath, (err) => {
-          if (err) console.error('Failed to cleanup zip file:', err);
-        });
+      res.download(zipFilePath, zipFileName, async (err) => {
+        if (err) {
+          console.error('Error sending zip file:', err);
+        }
+        try {
+          // Clean up the temporary zip file
+          await fs.unlink(zipFilePath);
+        } catch (unlinkError) {
+          console.error('Error cleaning up zip file:', unlinkError);
+        }
       });
     } catch (error) {
       console.error('Error creating image archive:', error);
