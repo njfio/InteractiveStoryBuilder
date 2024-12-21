@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Loader2, Trash2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthStore } from '@/lib/auth';
 
 interface ImageGalleryProps {
   manuscriptId?: number;
@@ -41,10 +42,11 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const limit = 12;
 
   const { data, isLoading } = useQuery({
-    queryKey: manuscriptId 
+    queryKey: manuscriptId
       ? [`/api/manuscripts/${manuscriptId}/images`, page]
       : ['/api/images', page],
     queryFn: async () => {
@@ -79,8 +81,8 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
         title: 'Success',
         description: 'Image deleted successfully',
       });
-      queryClient.invalidateQueries({ 
-        queryKey: manuscriptId 
+      queryClient.invalidateQueries({
+        queryKey: manuscriptId
           ? [`/api/manuscripts/${manuscriptId}/images`]
           : ['/api/images']
       });
@@ -120,8 +122,8 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
         title: 'Success',
         description: 'Image regenerated successfully',
       });
-      queryClient.invalidateQueries({ 
-        queryKey: manuscriptId 
+      queryClient.invalidateQueries({
+        queryKey: manuscriptId
           ? [`/api/manuscripts/${manuscriptId}/images`]
           : ['/api/images']
       });
@@ -145,7 +147,7 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
 
   return (
     <div className="space-y-8">
-      {manuscriptId && isAuthor && (
+      {manuscriptId && isAuthor && user && (
         <Card className="bg-muted/50">
           <CardContent className="flex items-center justify-between p-6">
             <div className="space-y-1">
@@ -191,7 +193,7 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {data?.images.map((image: any) => (
           <Card key={image.id} className="overflow-hidden">
-            <div 
+            <div
               className="relative aspect-[9/16] cursor-pointer"
               onClick={() => {
                 setLocation(`/reader/${image.manuscriptId}?chunk=${image.chunkId}`);
@@ -240,8 +242,8 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
                   </AlertDialogContent>
                 </AlertDialog>
 
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="icon"
                   onClick={() => regenerateImage.mutate({
                     chunkId: image.chunkId,
@@ -263,7 +265,7 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
         <Pagination>
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious 
+              <PaginationPrevious
                 onClick={() => page > 1 && setPage(p => p - 1)}
               />
             </PaginationItem>
@@ -291,7 +293,7 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
               })}
 
             <PaginationItem>
-              <PaginationNext 
+              <PaginationNext
                 onClick={() => page < data.pagination.totalPages && setPage(p => p + 1)}
               />
             </PaginationItem>

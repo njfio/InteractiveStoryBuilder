@@ -52,7 +52,40 @@ export const images = pgTable("images", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Relations
+export const printifyProducts = pgTable("printify_products", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  imageId: integer("image_id").notNull().references(() => images.id, { onDelete: 'cascade' }),
+  productId: text("product_id").notNull(),
+  blueprintId: integer("blueprint_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  isPublished: boolean("is_published").default(false),
+  printifyData: jsonb("printify_data"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const printifyImagePlacements = pgTable("printify_image_placements", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => printifyProducts.id, { onDelete: 'cascade' }),
+  x: integer("x").notNull(),
+  y: integer("y").notNull(),
+  scale: integer("scale").notNull(),
+  angle: integer("angle").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const printifyBlueprints = pgTable("printify_blueprints", {
+  id: serial("id").primaryKey(),
+  blueprintId: integer("blueprint_id").unique().notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  variants: jsonb("variants"),
+  printAreas: jsonb("print_areas"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
 export const manuscriptRelations = relations(manuscripts, ({ one, many }) => ({
   author: one(users, {
     fields: [manuscripts.authorId],
@@ -70,7 +103,7 @@ export const chunkRelations = relations(chunks, ({ one, many }) => ({
   images: many(images),
 }));
 
-export const imageRelations = relations(images, ({ one }) => ({
+export const imageRelations = relations(images, ({ one, many }) => ({
   chunk: one(chunks, {
     fields: [images.chunkId],
     references: [chunks.id],
@@ -79,13 +112,27 @@ export const imageRelations = relations(images, ({ one }) => ({
     fields: [images.manuscriptId],
     references: [manuscripts.id],
   }),
+  printifyProducts: many(printifyProducts),
 }));
 
-// Types and Schemas
+export const printifyProductRelations = relations(printifyProducts, ({ one, many }) => ({
+  user: one(users, {
+    fields: [printifyProducts.userId],
+    references: [users.id],
+  }),
+  image: one(images, {
+    fields: [printifyProducts.imageId],
+    references: [images.id],
+  }),
+  placements: many(printifyImagePlacements),
+}));
+
 export const insertManuscriptSchema = createInsertSchema(manuscripts);
 export const selectManuscriptSchema = createSelectSchema(manuscripts);
 export const insertChunkSchema = createInsertSchema(chunks);
 export const selectChunkSchema = createSelectSchema(chunks);
+export const insertPrintifyProductSchema = createInsertSchema(printifyProducts);
+export const selectPrintifyProductSchema = createSelectSchema(printifyProducts);
 
 export type Manuscript = typeof manuscripts.$inferSelect;
 export type NewManuscript = typeof manuscripts.$inferInsert;
@@ -93,3 +140,7 @@ export type Chunk = typeof chunks.$inferSelect;
 export type NewChunk = typeof chunks.$inferInsert;
 export type Image = typeof images.$inferSelect;
 export type NewImage = typeof images.$inferInsert;
+export type PrintifyProduct = typeof printifyProducts.$inferSelect;
+export type NewPrintifyProduct = typeof printifyProducts.$inferInsert;
+export type PrintifyImagePlacement = typeof printifyImagePlacements.$inferSelect;
+export type PrintifyBlueprint = typeof printifyBlueprints.$inferSelect;
