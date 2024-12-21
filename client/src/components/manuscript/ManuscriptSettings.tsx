@@ -68,6 +68,11 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
   const handleDownloadImages = async () => {
     try {
       setIsDownloading(true);
+      toast({
+        title: 'Starting download',
+        description: 'Preparing images for download...',
+      });
+
       const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/manuscripts/${manuscript.id}/download-images`, {
         headers: {
@@ -76,8 +81,14 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to download images');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to download images');
       }
+
+      toast({
+        title: 'Processing',
+        description: 'Creating zip file...',
+      });
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -94,6 +105,7 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
         description: 'Images downloaded successfully',
       });
     } catch (error) {
+      console.error('Download error:', error);
       toast({
         title: 'Error',
         description: (error as Error).message,

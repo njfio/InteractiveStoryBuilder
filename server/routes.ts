@@ -938,11 +938,10 @@ export function registerRoutes(app: Express): Server {
           const inputFile = join(exportDir, `${sanitizedTitle}.md`);
           const outputFile = join(exportDir, `${sanitizedTitle}.docx`);
 
-          try {
-            console.log('Writing markdown content totemporaryfile...');
+          try {            console.log('Writing markdown content to temporary file...');
             await fs.writeFile(inputFile, content);
 
-            console.log('Converting markdownto DOCX using pandoc with images...');
+            console.log('Converting markdown to DOCX using pandoc with images...');
             // Use pandoc with the correct working directory to ensure images are found
             await execAsync(`cd "${exportDir}" && pandoc "${sanitizedTitle}.md" -o "${sanitizedTitle}.docx" --standalone`);
             console.log('DOCX conversion completed successfully');
@@ -969,6 +968,8 @@ export function registerRoutes(app: Express): Server {
   // Download all images for a manuscript
   app.get('/api/manuscripts/:id/download-images', async (req, res) => {
     try {
+      console.log('Starting image download process...');
+
       // First check manuscript access
       const manuscript = await db.query.manuscripts.findFirst({
         where: eq(manuscripts.id, parseInt(req.params.id)),
@@ -999,6 +1000,7 @@ export function registerRoutes(app: Express): Server {
         }
       }
 
+      console.log('Fetching images for manuscript...');
       // Get all images for the manuscript
       const allImages = await db.query.images.findMany({
         where: eq(images.manuscriptId, manuscript.id),
@@ -1009,11 +1011,21 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: 'No images found for this manuscript' });
       }
 
+      console.log(`Found ${allImages.length} images to archive`);
+
       // Create a temporary directory for zip creation
       const tempDir = '/tmp';
+      try {
+        await fs.access(tempDir);
+      } catch {
+        console.log('Creating temp directory...');
+        await fs.mkdir(tempDir, { recursive: true });
+      }
+
       const zipFileName = `${manuscript.title.replace(/[^a-zA-Z0-9]/g, '_')}_images.zip`;
       const zipFilePath = join(tempDir, zipFileName);
 
+      console.log('Creating zip archive...');
       // Create a write stream for the zip file
       const output = createWriteStream(zipFilePath);
       const archive = archiver('zip', {
@@ -1022,16 +1034,32 @@ export function registerRoutes(app: Express): Server {
 
       // Set up error handling for both the archive and output stream
       output.on('error', (err) => {
+        console.error('Output stream error:', err);
         throw err;
       });
 
       archive.on('error', (err) => {
+        console.error('Archive error:', err);
         throw err;
+      });
+
+      archive.on('warning', (err) => {
+        if (err.code === 'ENOENT') {
+          console.warn('Archive warning:', err);
+        } else {
+          throw err;
+        }
+      });
+
+      // Add progress logging
+      archive.on('progress', (progress) => {
+        console.log(`Archive progress: ${progress.entries.processed}/${progress.entries.total} files`);
       });
 
       // Pipe archive data to the output file
       archive.pipe(output);
 
+      console.log('Adding images to archive...');
       // Add each image to the archive
       for (const image of allImages) {
         const imagePath = join(process.cwd(), 'public', image.localPath);
@@ -1039,6 +1067,7 @@ export function registerRoutes(app: Express): Server {
         try {
           // Check if the file exists before trying to add it
           await fs.access(imagePath);
+          console.log(`Adding image to archive: ${imageFileName}`);
           archive.file(imagePath, { name: imageFileName });
         } catch (err) {
           console.error(`Failed to add image to archive: ${imagePath}`, err);
@@ -1046,10 +1075,17 @@ export function registerRoutes(app: Express): Server {
         }
       }
 
+      console.log('Finalizing archive...');
       // Create a promise that resolves when the archive is finalized
       const archiveFinalize = new Promise((resolve, reject) => {
-        output.on('close', resolve);
-        output.on('error', reject);
+        output.on('close', () => {
+          console.log('Archive has been finalized');
+          resolve(undefined);
+        });
+        output.on('error', (err) => {
+          console.error('Error finalizing archive:', err);
+          reject(err);
+        });
       });
 
       // Finalize the archive
@@ -1058,6 +1094,7 @@ export function registerRoutes(app: Express): Server {
       // Wait for the archive to be fully written
       await archiveFinalize;
 
+      console.log('Sending zip file...');
       // Send the zip file
       res.download(zipFilePath, zipFileName, async (err) => {
         if (err) {
@@ -1066,13 +1103,17 @@ export function registerRoutes(app: Express): Server {
         try {
           // Clean up the temporary zip file
           await fs.unlink(zipFilePath);
+          console.log('Cleaned up temporary zip file');
         } catch (unlinkError) {
           console.error('Error cleaning up zip file:', unlinkError);
         }
       });
     } catch (error) {
       console.error('Error creating image archive:', error);
-      res.status(500).json({ message: 'Failed to create image archive' });
+      res.status(500).json({ 
+        message: 'Failed to create image archive',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
