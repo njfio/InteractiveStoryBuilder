@@ -12,6 +12,7 @@ import { requireAuth } from './middleware/auth';
 import { eq, sql } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
 import { generateImage } from './utils/image';
+import archiver from 'archiver';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -937,7 +938,7 @@ export function registerRoutes(app: Express): Server {
           const outputFile = join(exportDir, `${sanitizedTitle}.docx`);
 
           try {
-            console.log('Writing markdown content to temporary file...');
+            console.log('Writing markdown content to temporaryfile...');
             await fs.writeFile(inputFile, content);
 
             console.log('Converting markdownto DOCX using pandoc with images...');
@@ -961,6 +962,96 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({
         message: (error as Error).message || 'Failed to export manuscript'
       });
+    }
+  });
+
+  // Download all images for a manuscript
+  app.get('/api/manuscripts/:id/download-images', async (req, res) => {
+    try {
+      // First check manuscript access
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.id)),
+        columns: {
+          id: true,
+          title: true,
+          authorId: true,
+          isPublic: true,
+        },
+      });
+
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      // If manuscript is not public, verify authentication
+      if (!manuscript.isPublic) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+          return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+
+        if (error || !user || user.id !== manuscript.authorId) {
+          return res.status(403).json({ message: 'Forbidden' });
+        }
+      }
+
+      // Get all images for the manuscript
+      const allImages = await db.query.images.findMany({
+        where: eq(images.manuscriptId, manuscript.id),
+        orderBy: (images, { asc }) => [asc(images.createdAt)],
+      });
+
+      if (!allImages.length) {
+        return res.status(404).json({ message: 'No images found for this manuscript' });
+      }
+
+      // Create a temporary directory for zip creation
+      const tempDir = '/tmp';
+      const zipFileName = `${manuscript.title.replace(/[^a-zA-Z0-9]/g, '_')}_images.zip`;
+      const zipFilePath = join(tempDir, zipFileName);
+
+      // Create a write stream for the zip file
+      const output = fs.createWriteStream(zipFilePath);
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // Maximum compression
+      });
+
+      // Pipe archive data to the file
+      archive.pipe(output);
+
+      // Add each image to the archive
+      for (const image of allImages) {
+        const imagePath = join(process.cwd(), 'public', image.localPath);
+        const imageFileName = image.localPath.split('/').pop();
+        try {
+          archive.file(imagePath, { name: imageFileName });
+        } catch (err) {
+          console.error(`Failed to add image to archive: ${imagePath}`, err);
+        }
+      }
+
+      // Finalize the archive and send the response
+      await archive.finalize();
+
+      // Wait for the write stream to finish
+      await new Promise((resolve, reject) => {
+        output.on('close', resolve);
+        output.on('error', reject);
+      });
+
+      // Send the zip file
+      res.download(zipFilePath, zipFileName, () => {
+        // Clean up the temporary zip file after sending
+        fs.unlink(zipFilePath, (err) => {
+          if (err) console.error('Failed to cleanup zip file:', err);
+        });
+      });
+    } catch (error) {
+      console.error('Error creating image archive:', error);
+      res.status(500).json({ message: 'Failed to create image archive' });
     }
   });
 

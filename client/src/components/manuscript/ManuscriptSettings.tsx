@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 
 interface ManuscriptSettingsProps {
   manuscript: {
@@ -22,6 +22,7 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
   const [title, setTitle] = useState(manuscript.title);
   const [authorName, setAuthorName] = useState(manuscript.authorName || '');
   const [isPublic, setIsPublic] = useState(manuscript.isPublic || false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -64,6 +65,45 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
     updateSettings.mutate({ title, authorName, isPublic });
   };
 
+  const handleDownloadImages = async () => {
+    try {
+      setIsDownloading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`/api/manuscripts/${manuscript.id}/download-images`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download images');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${manuscript.title.replace(/[^a-zA-Z0-9]/g, '_')}_images.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: 'Success',
+        description: 'Images downloaded successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -100,20 +140,36 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
             <Label htmlFor="isPublic">Make manuscript public</Label>
           </div>
 
-          <Button
-            type="submit"
-            disabled={updateSettings.isPending}
-            className="w-full"
-          >
-            {updateSettings.isPending ? (
-              <>
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              disabled={updateSettings.isPending}
+              className="flex-1"
+            >
+              {updateSettings.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDownloadImages}
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Changes'
-            )}
-          </Button>
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              Download Images
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>
