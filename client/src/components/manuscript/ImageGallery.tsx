@@ -38,6 +38,7 @@ interface ImageGalleryProps {
 }
 
 export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
+  // Hooks must be called unconditionally at the top level
   const [page, setPage] = useState(1);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -145,9 +146,12 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
     );
   }
 
+  // Only render the progress card if all conditions are met
+  const showProgressCard = manuscriptId && isAuthor && user;
+
   return (
     <div className="space-y-8">
-      {manuscriptId && isAuthor && user && (
+      {showProgressCard && (
         <Card className="bg-muted/50">
           <CardContent className="flex items-center justify-between p-6">
             <div className="space-y-1">
@@ -190,6 +194,7 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
           </CardContent>
         </Card>
       )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {data?.images.map((image: any) => (
           <Card key={image.id} className="overflow-hidden">
@@ -211,7 +216,7 @@ export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
                 {image.chunk.text}
               </p>
             </CardContent>
-            {isAuthor && (
+            {isAuthor && user && (
               <CardFooter className="flex justify-between p-4">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
