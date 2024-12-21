@@ -939,7 +939,7 @@ export function registerRoutes(app: Express): Server {
           const outputFile = join(exportDir, `${sanitizedTitle}.docx`);
 
           try {
-            console.log('Writing markdown content to temporary file...');
+            console.log('Writing markdown contentto temporary file...');
             await fs.writeFile(inputFile, content);
 
             console.log('Converting markdown to DOCX using pandoc with images...');
@@ -972,6 +972,9 @@ export function registerRoutes(app: Express): Server {
     try {
       console.log('Starting image download process...');
 
+      const chunkIndex = parseInt(req.query.chunk as string) || 0;
+      const chunkSize = 10; // Number of images per chunk
+
       // First check manuscript access
       const manuscript = await db.query.manuscripts.findFirst({
         where: eq(manuscripts.id, parseInt(req.params.id)),
@@ -987,7 +990,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: 'Manuscript not found' });
       }
 
-      // If manuscript is not public, verify authentication
+      // Verify authentication if needed
       if (!manuscript.isPublic) {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
@@ -1005,13 +1008,20 @@ export function registerRoutes(app: Express): Server {
       console.log('Fetching images for manuscript...');
       const allImages = await db.query.images.findMany({
         where: eq(images.manuscriptId, manuscript.id),
+        orderBy: (images, { asc }) => [asc(images.createdAt)],
       });
 
       if (!allImages.length) {
         return res.status(404).json({ message: 'No images found for this manuscript' });
       }
 
-      console.log(`Found ${allImages.length} images to archive`);
+      // Calculate total chunks and current chunk images
+      const totalChunks = Math.ceil(allImages.length / chunkSize);
+      const startIndex = chunkIndex * chunkSize;
+      const endIndex = Math.min(startIndex + chunkSize, allImages.length);
+      const chunkImages = allImages.slice(startIndex, endIndex);
+
+      console.log(`Processing chunk ${chunkIndex + 1}/${totalChunks} (${chunkImages.length} images)`);
 
       // Create a temporary directory for zip creation
       const tempDir = '/tmp';
@@ -1022,7 +1032,7 @@ export function registerRoutes(app: Express): Server {
         await fs.mkdir(tempDir, { recursive: true });
       }
 
-      const zipFileName = `${manuscript.title.replace(/[^a-zA-Z0-9]/g, '_')}_images.zip`;
+      const zipFileName = `${manuscript.title.replace(/[^a-zA-Z0-9]/g, '_')}_images_part${chunkIndex + 1}of${totalChunks}.zip`;
       zipFilePath = join(tempDir, zipFileName);
 
       console.log('Creating zip archive...');
@@ -1071,7 +1081,7 @@ export function registerRoutes(app: Express): Server {
       let processedFiles = 0;
       archive.on('entry', () => {
         processedFiles++;
-        console.log(`Archive progress: ${processedFiles}/${allImages.length} files`);
+        console.log(`Archive progress: ${processedFiles}/${chunkImages.length} files`);
       });
 
       // Pipe archive data to the output file
@@ -1079,7 +1089,7 @@ export function registerRoutes(app: Express): Server {
 
       console.log('Adding images to archive...');
       // Add each image to the archive
-      for (const image of allImages) {
+      for (const image of chunkImages) {
         const imagePath = join(process.cwd(), 'public', image.localPath);
         const imageFileName = image.localPath.split('/').pop();
         try {
@@ -1089,14 +1099,15 @@ export function registerRoutes(app: Express): Server {
           archive.file(imagePath, { name: imageFileName });
         } catch (err) {
           console.error(`Failed to add image to archive: ${imagePath}`, err);
-          // Continue with other images if one fails
-          continue;
+          continue; // Skip this image if there's an error
         }
       }
 
       console.log('Finalizing archive...');
-      // Create a promise that resolves when the archive is finalized
-      const archiveFinalize = new Promise<void>((resolve, reject) => {
+      await archive.finalize();
+
+      // Wait for the archive to be fully written
+      await new Promise<void>((resolve, reject) => {
         output.on('close', () => {
           console.log('Archive has been finalized');
           resolve();
@@ -1107,19 +1118,13 @@ export function registerRoutes(app: Express): Server {
         });
       });
 
-      // Finalize the archive
-      await archive.finalize();
-
-      // Wait for the archive to be fully written
-      await archiveFinalize;
-
-      console.log('Sending zip file...');
-      // Set appropriate headers for large file download
+      // Send response with file info
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
-      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('X-Total-Chunks', totalChunks.toString());
+      res.setHeader('X-Current-Chunk', (chunkIndex + 1).toString());
 
-      // Stream the file in chunks
+      // Stream the file
       const fileStream = createReadStream(zipFilePath);
       fileStream.pipe(res);
 
@@ -1132,7 +1137,6 @@ export function registerRoutes(app: Express): Server {
 
       fileStream.on('end', async () => {
         console.log('File streaming completed');
-        // Clean up the temporary zip file
         try {
           await fs.unlink(zipFilePath);
           console.log('Cleaned up temporary zip file');
@@ -1160,6 +1164,7 @@ export function registerRoutes(app: Express): Server {
       }
     }
   });
+
   const httpServer = createServer(app);
   return httpServer;
 }

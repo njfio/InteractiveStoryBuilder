@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { Loader2, Download } from 'lucide-react';
 
 interface ManuscriptSettingsProps {
@@ -23,6 +24,7 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
   const [authorName, setAuthorName] = useState(manuscript.authorName || '');
   const [isPublic, setIsPublic] = useState(manuscript.isPublic || false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -60,49 +62,65 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateSettings.mutate({ title, authorName, isPublic });
-  };
-
   const handleDownloadImages = async () => {
     try {
       setIsDownloading(true);
-      toast({
-        title: 'Starting download',
-        description: 'Preparing images for download...',
-      });
+      setDownloadProgress({ current: 0, total: 0 });
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`/api/manuscripts/${manuscript.id}/download-images`, {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
+      // Start with chunk 0
+      let currentChunk = 0;
+      let totalChunks = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        toast({
+          title: 'Downloading',
+          description: `Preparing part ${currentChunk + 1}...`,
+        });
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const response = await fetch(
+          `/api/manuscripts/${manuscript.id}/download-images?chunk=${currentChunk}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${session?.access_token}`
+            }
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to download images');
         }
-      });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to download images');
+        // Get total chunks from headers
+        totalChunks = parseInt(response.headers.get('X-Total-Chunks') || '1');
+        setDownloadProgress({ current: currentChunk + 1, total: totalChunks });
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = response.headers.get('Content-Disposition')?.split('filename=')[1].replace(/"/g, '') || 
+                    `${manuscript.title.replace(/[^a-zA-Z0-9]/g, '_')}_images_part${currentChunk + 1}of${totalChunks}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        // Check if we need to continue
+        currentChunk++;
+        hasMore = currentChunk < totalChunks;
+
+        // Add a small delay between downloads
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
 
       toast({
-        title: 'Processing',
-        description: 'Creating zip file...',
-      });
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${manuscript.title.replace(/[^a-zA-Z0-9]/g, '_')}_images.zip`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
         title: 'Success',
-        description: 'Images downloaded successfully',
+        description: `Downloaded all ${totalChunks} parts successfully`,
       });
     } catch (error) {
       console.error('Download error:', error);
@@ -113,7 +131,13 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
       });
     } finally {
       setIsDownloading(false);
+      setDownloadProgress({ current: 0, total: 0 });
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings.mutate({ title, authorName, isPublic });
   };
 
   return (
@@ -152,6 +176,15 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
             <Label htmlFor="isPublic">Make manuscript public</Label>
           </div>
 
+          {downloadProgress.total > 0 && (
+            <div className="space-y-2">
+              <Progress value={(downloadProgress.current / downloadProgress.total) * 100} />
+              <p className="text-sm text-muted-foreground">
+                Downloading part {downloadProgress.current} of {downloadProgress.total}
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <Button
               type="submit"
@@ -179,7 +212,7 @@ export function ManuscriptSettings({ manuscript }: ManuscriptSettingsProps) {
               ) : (
                 <Download className="mr-2 h-4 w-4" />
               )}
-              Download Images
+              {isDownloading ? 'Downloading...' : 'Download Images'}
             </Button>
           </div>
         </form>
