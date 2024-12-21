@@ -47,6 +47,29 @@ export function registerRoutes(app: Express): Server {
     res.json(results);
   });
 
+  app.get('/api/manuscripts/public', async (req, res) => {
+    try {
+      const results = await db.query.manuscripts.findMany({
+        where: eq(manuscripts.isPublic, true),
+        with: {
+          author: true,
+        },
+        columns: {
+          id: true,
+          title: true,
+          authorId: true,
+          authorName: true,
+          isPublic: true,
+          updatedAt: true,
+        },
+      });
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching public manuscripts:', error);
+      res.status(500).json({ message: 'Failed to fetch public manuscripts' });
+    }
+  });
+
   app.get('/api/manuscripts/:id', async (req, res) => {
     const result = await db.query.manuscripts.findFirst({
       where: eq(manuscripts.id, parseInt(req.params.id)),
@@ -63,7 +86,26 @@ export function registerRoutes(app: Express): Server {
         updatedAt: true,
       },
     });
-    if (!result) return res.status(404).send('Manuscript not found');
+
+    if (!result) {
+      return res.status(404).send('Manuscript not found');
+    }
+
+    // Check if manuscript is public or if user is authenticated and is the author
+    const authHeader = req.headers.authorization;
+    if (!result.isPublic) {
+      if (!authHeader) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const token = authHeader.split(' ')[1];
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+
+      if (error || !user || user.id !== result.authorId) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+    }
+
     res.json(result);
   });
 
@@ -397,7 +439,6 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: 'Failed to split chunk' });
     }
   });
-
 
   // Image Galleries
   app.get('/api/images', async (req, res) => {

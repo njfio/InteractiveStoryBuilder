@@ -36,6 +36,7 @@ interface Manuscript {
   author?: {
     email: string;
   };
+  authorName?: string; // Added authorName to Manuscript interface
 }
 
 export function Reader() {
@@ -60,7 +61,7 @@ export function Reader() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const chunkId = searchParams.get('chunk');
-    
+
     if (chunks.length > 0) {
       if (chunkId) {
         const parsedId = parseInt(chunkId);
@@ -108,10 +109,12 @@ export function Reader() {
         <header className="mb-12 text-center">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-4xl font-bold">{manuscript.title}</h1>
-            <ExportDialog manuscriptId={manuscript.id} title={manuscript.title} />
+            {isAuthor && (
+              <ExportDialog manuscriptId={manuscript.id} title={manuscript.title} />
+            )}
           </div>
           <p className="text-muted-foreground">
-            by {manuscript.author?.email || 'Anonymous'}
+            by {manuscript.authorName || manuscript.author?.email || 'Anonymous'}
           </p>
         </header>
 
