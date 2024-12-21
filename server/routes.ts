@@ -13,7 +13,7 @@ import { eq, sql } from 'drizzle-orm';
 import { parseMarkdown } from '../client/src/lib/markdown';
 import { generateImage } from './utils/image';
 import archiver from 'archiver';
-import { createWriteStream } from 'fs';
+import { createWriteStream, createReadStream } from 'fs';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -938,7 +938,8 @@ export function registerRoutes(app: Express): Server {
           const inputFile = join(exportDir, `${sanitizedTitle}.md`);
           const outputFile = join(exportDir, `${sanitizedTitle}.docx`);
 
-          try {            console.log('Writing markdown content to temporary file...');
+          try {
+            console.log('Writing markdown content to temporary file...');
             await fs.writeFile(inputFile, content);
 
             console.log('Converting markdown to DOCX using pandoc with images...');
@@ -967,6 +968,7 @@ export function registerRoutes(app: Express): Server {
 
   // Download all images for a manuscript
   app.get('/api/manuscripts/:id/download-images', async (req, res) => {
+    let zipFilePath: string | null = null;
     try {
       console.log('Starting image download process...');
 
@@ -1001,10 +1003,8 @@ export function registerRoutes(app: Express): Server {
       }
 
       console.log('Fetching images for manuscript...');
-      // Get all images for the manuscript
       const allImages = await db.query.images.findMany({
         where: eq(images.manuscriptId, manuscript.id),
-        orderBy: (images, { asc }) => [asc(images.createdAt)],
       });
 
       if (!allImages.length) {
@@ -1023,37 +1023,55 @@ export function registerRoutes(app: Express): Server {
       }
 
       const zipFileName = `${manuscript.title.replace(/[^a-zA-Z0-9]/g, '_')}_images.zip`;
-      const zipFilePath = join(tempDir, zipFileName);
+      zipFilePath = join(tempDir, zipFileName);
 
       console.log('Creating zip archive...');
-      // Create a write stream for the zip file
       const output = createWriteStream(zipFilePath);
       const archive = archiver('zip', {
-        zlib: { level: 9 } // Maximum compression
+        zlib: { level: 6 } // Balanced compression
       });
 
       // Set up error handling for both the archive and output stream
       output.on('error', (err) => {
         console.error('Output stream error:', err);
-        throw err;
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Error creating zip file', error: err.message });
+        }
       });
 
       archive.on('error', (err) => {
         console.error('Archive error:', err);
-        throw err;
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Error creating archive', error: err.message });
+        }
       });
 
       archive.on('warning', (err) => {
         if (err.code === 'ENOENT') {
           console.warn('Archive warning:', err);
         } else {
-          throw err;
+          console.error('Archive warning:', err);
+          if (!res.headersSent) {
+            res.status(500).json({ message: 'Archive warning', error: err.message });
+          }
+        }
+      });
+
+      // Handle client disconnect
+      req.on('close', () => {
+        console.log('Client disconnected, cleaning up...');
+        if (zipFilePath) {
+          fs.unlink(zipFilePath).catch(err => {
+            console.error('Error cleaning up zip file after disconnect:', err);
+          });
         }
       });
 
       // Add progress logging
-      archive.on('progress', (progress) => {
-        console.log(`Archive progress: ${progress.entries.processed}/${progress.entries.total} files`);
+      let processedFiles = 0;
+      archive.on('entry', () => {
+        processedFiles++;
+        console.log(`Archive progress: ${processedFiles}/${allImages.length} files`);
       });
 
       // Pipe archive data to the output file
@@ -1071,16 +1089,17 @@ export function registerRoutes(app: Express): Server {
           archive.file(imagePath, { name: imageFileName });
         } catch (err) {
           console.error(`Failed to add image to archive: ${imagePath}`, err);
-          continue; // Skip this image if there's an error
+          // Continue with other images if one fails
+          continue;
         }
       }
 
       console.log('Finalizing archive...');
       // Create a promise that resolves when the archive is finalized
-      const archiveFinalize = new Promise((resolve, reject) => {
+      const archiveFinalize = new Promise<void>((resolve, reject) => {
         output.on('close', () => {
           console.log('Archive has been finalized');
-          resolve(undefined);
+          resolve();
         });
         output.on('error', (err) => {
           console.error('Error finalizing archive:', err);
@@ -1095,13 +1114,26 @@ export function registerRoutes(app: Express): Server {
       await archiveFinalize;
 
       console.log('Sending zip file...');
-      // Send the zip file
-      res.download(zipFilePath, zipFileName, async (err) => {
-        if (err) {
-          console.error('Error sending zip file:', err);
+      // Set appropriate headers for large file download
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+      res.setHeader('Transfer-Encoding', 'chunked');
+
+      // Stream the file in chunks
+      const fileStream = createReadStream(zipFilePath);
+      fileStream.pipe(res);
+
+      fileStream.on('error', (err) => {
+        console.error('Error streaming file:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Error streaming file', error: err.message });
         }
+      });
+
+      fileStream.on('end', async () => {
+        console.log('File streaming completed');
+        // Clean up the temporary zip file
         try {
-          // Clean up the temporary zip file
           await fs.unlink(zipFilePath);
           console.log('Cleaned up temporary zip file');
         } catch (unlinkError) {
@@ -1110,13 +1142,24 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error('Error creating image archive:', error);
-      res.status(500).json({ 
-        message: 'Failed to create image archive',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      if (!res.headersSent) {
+        res.status(500).json({
+          message: 'Failed to create image archive',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+
+      // Cleanup on error
+      if (zipFilePath) {
+        try {
+          await fs.unlink(zipFilePath);
+          console.log('Cleaned up temporary zip file after error');
+        } catch (unlinkError) {
+          console.error('Error cleaning up zip file after error:', unlinkError);
+        }
+      }
     }
   });
-
   const httpServer = createServer(app);
   return httpServer;
 }
