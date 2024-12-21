@@ -7,14 +7,13 @@ import { ManuscriptSettings } from '@/components/manuscript/ManuscriptSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth, useAuthStore } from '@/lib/auth';
 import { Loader2, Book, Image as ImageIcon, Trash2, Settings } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -35,6 +34,7 @@ export function Dashboard() {
   const [showUpload, setShowUpload] = useState(false);
   const [showSettings, setShowSettings] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const { user } = useAuthStore();
 
   // Check authentication
   if (!requireAuth()) {
@@ -155,55 +155,60 @@ export function Dashboard() {
                   <Book className="mr-2 h-4 w-4" />
                   Read
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateAllImages.mutate(manuscript.id)}
-                  disabled={generateAllImages.isPending}
-                >
-                  <ImageIcon className="mr-2 h-4 w-4" />
-                  Generate Images
-                </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSettings(manuscript.id)}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Button>
-
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <Trash2 className="h-4 w-4" />
+                {user && user.id === manuscript.authorId && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateAllImages.mutate(manuscript.id)}
+                      disabled={generateAllImages.isPending}
+                    >
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      Generate Images
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Manuscript</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this manuscript? This action cannot be undone
-                        and will also delete all associated chunks and images.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => deleteManuscript.mutate(manuscript.id)}
-                        disabled={deleteLoading === manuscript.id}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        {deleteLoading === manuscript.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          'Delete'
-                        )}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowSettings(manuscript.id)}
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Button>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Manuscript</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this manuscript? This action cannot be undone
+                            and will also delete all associated chunks and images.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteManuscript.mutate(manuscript.id)}
+                            disabled={deleteLoading === manuscript.id}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            {deleteLoading === manuscript.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              'Delete'
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
