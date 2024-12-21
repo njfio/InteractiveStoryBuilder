@@ -33,9 +33,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ImageGalleryProps {
   manuscriptId?: number;
+  isAuthor: boolean;
 }
 
-export function ImageGallery({ manuscriptId }: ImageGalleryProps) {
+export function ImageGallery({ manuscriptId, isAuthor }: ImageGalleryProps) {
   const [page, setPage] = useState(1);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -144,7 +145,7 @@ export function ImageGallery({ manuscriptId }: ImageGalleryProps) {
 
   return (
     <div className="space-y-8">
-      {manuscriptId && (
+      {manuscriptId && isAuthor && (
         <Card className="bg-muted/50">
           <CardContent className="flex items-center justify-between p-6">
             <div className="space-y-1">
@@ -208,50 +209,52 @@ export function ImageGallery({ manuscriptId }: ImageGalleryProps) {
                 {image.chunk.text}
               </p>
             </CardContent>
-            <CardFooter className="flex justify-between p-4">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Image</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this image? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => deleteImage.mutate(image.id)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {deleteImage.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        'Delete'
-                      )}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+            {isAuthor && (
+              <CardFooter className="flex justify-between p-4">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Image</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this image? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteImage.mutate(image.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {deleteImage.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Delete'
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
 
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => regenerateImage.mutate({
-                  chunkId: image.chunkId,
-                  prompt: image.chunk.text
-                })}
-                disabled={regenerateImage.isPending}
-              >
-                <RefreshCw className={`h-4 w-4 ${
-                  regenerateImage.isPending ? 'animate-spin' : ''
-                }`} />
-              </Button>
-            </CardFooter>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => regenerateImage.mutate({
+                    chunkId: image.chunkId,
+                    prompt: image.chunk.text
+                  })}
+                  disabled={regenerateImage.isPending}
+                >
+                  <RefreshCw className={`h-4 w-4 ${
+                    regenerateImage.isPending ? 'animate-spin' : ''
+                  }`} />
+                </Button>
+              </CardFooter>
+            )}
           </Card>
         ))}
       </div>
@@ -264,7 +267,7 @@ export function ImageGallery({ manuscriptId }: ImageGalleryProps) {
                 onClick={() => page > 1 && setPage(p => p - 1)}
               />
             </PaginationItem>
-            
+
             {Array.from({ length: data.pagination.totalPages }, (_, i) => i + 1)
               .filter(p => p === 1 || p === data.pagination.totalPages || Math.abs(p - page) <= 1)
               .map((p, i, arr) => {
