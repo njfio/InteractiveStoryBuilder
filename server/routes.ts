@@ -226,6 +226,35 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/manuscripts/:id/chunks', async (req, res) => {
     console.time('chunks-query');
     try {
+      // First check if the manuscript is public
+      const manuscript = await db.query.manuscripts.findFirst({
+        where: eq(manuscripts.id, parseInt(req.params.id)),
+        columns: {
+          id: true,
+          isPublic: true,
+          authorId: true,
+        },
+      });
+
+      if (!manuscript) {
+        return res.status(404).json({ message: 'Manuscript not found' });
+      }
+
+      // If manuscript is not public, verify authentication
+      if (!manuscript.isPublic) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+          return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+
+        if (error || !user || user.id !== manuscript.authorId) {
+          return res.status(403).json({ message: 'Forbidden' });
+        }
+      }
+
       const results = await db.query.chunks.findMany({
         where: eq(chunks.manuscriptId, parseInt(req.params.id)),
         columns: {
@@ -911,7 +940,7 @@ export function registerRoutes(app: Express): Server {
             console.log('Writing markdown content to temporary file...');
             await fs.writeFile(inputFile, content);
 
-            console.log('Converting markdown to DOCX using pandoc with images...');
+            console.log('Converting markdownto DOCX using pandoc with images...');
             // Use pandoc with the correct working directory to ensure images are found
             await execAsync(`cd "${exportDir}" && pandoc "${sanitizedTitle}.md" -o "${sanitizedTitle}.docx" --standalone`);
             console.log('DOCX conversion completed successfully');
